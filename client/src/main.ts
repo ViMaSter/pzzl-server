@@ -1,44 +1,47 @@
-class Position
+class Vector2
 {
 	x : number = 0;
 	y : number = 0;
-	constructor(x : number, y : number)
+	constructor(x : number = 0, y : number = 0)
 	{
 		this.x = x;
 		this.y = y;
 	}
-	static fromString(x : string, y : string) : Position
+	static fromString(x : string, y : string) : Vector2
 	{
-		return new Position(parseInt(x), parseInt(y));
+		return new Vector2(parseInt(x), parseInt(y));
 	}
-	static delta(posA : Position, posB : Position) : Position
+	static delta(posA : Vector2, posB : Vector2) : Vector2
 	{
-		return new Position(
+		return new Vector2(
 			posA.x - posB.x,
 			posA.y - posB.y
 		);
 	}
 }
 
-type PuzzlePieceMouseListenerCallback = (lastPosition : Position, newPosition : Position, deltaPosition : Position) => void;
+type PuzzlePieceMouseListenerCallback = (lastPosition : Vector2, newPosition : Vector2, deltaPosition : Vector2) => void;
+type PuzzleToggleItemCallback = (piece : Piece) => void;
 class PuzzlePieceMouseListener
 {
-	lastPosition : Position = new Position(-1, -1);
+	lastPosition : Vector2 = new Vector2(-1, -1);
 	updateListener : PuzzlePieceMouseListenerCallback[] = [];
 	constructor()
 	{
 		window.addEventListener("mousemove", this.updateMousePosition.bind(this));
-		window.addEventListener("touchmove", this.updateTouchPosition.bind(this), {passive: false});
+		window.addEventListener("mousedown", this.updateMousePosition.bind(this));
+		window.addEventListener("touchmove", this.updateTouchPosition.bind(this), {capture: true, passive: false});
+		window.addEventListener("touchstart", this.updateTouchPosition.bind(this), {capture: true, passive: false});
 	}
-	UpdatePosition(newPosition : Position)
+	UpdatePosition(newPosition : Vector2)
 	{
-		const deltaPosition = Position.delta(newPosition, this.lastPosition);
+		const deltaPosition = Vector2.delta(newPosition, this.lastPosition);
 		this.Update(this.lastPosition, newPosition, deltaPosition)
 		this.lastPosition = newPosition;
 	}
 	private updateMousePosition(event : MouseEvent)
 	{
-		const newPosition : Position = new Position (event.clientX, event.clientY);
+		const newPosition : Vector2 = new Vector2 (event.clientX, event.clientY);
 		this.UpdatePosition(newPosition);
 		event.preventDefault();
 	}
@@ -50,7 +53,7 @@ class PuzzlePieceMouseListener
 			return;
 		}
 		const firstTouch : Touch = event.touches.item(0) as Touch;
-		const newPosition : Position = new Position(firstTouch.screenX, firstTouch.screenY);
+		const newPosition : Vector2 = new Vector2(firstTouch.screenX, firstTouch.screenY);
 		this.UpdatePosition(newPosition);
 	}
 
@@ -75,7 +78,7 @@ class PuzzlePieceMouseListener
 		this.updateListener.splice(listenerIndex, 1);
 	}
 
-	private Update(lastPosition : Position, newPosition : Position, deltaPosition : Position)
+	private Update(lastPosition : Vector2, newPosition : Vector2, deltaPosition : Vector2)
 	{
 		this.updateListener.forEach((listener : PuzzlePieceMouseListenerCallback) =>
 		{
@@ -84,109 +87,180 @@ class PuzzlePieceMouseListener
 	}
 }
 
-class Puzzle
+class Piece
 {
-	listener : PuzzlePieceMouseListener = new PuzzlePieceMouseListener();
-
-	pieces : HTMLElement[] = [];
-	activePiece : HTMLElement | null = null;
-	constructor(rootElement : Element)
+	element : HTMLElement;
+	position : Vector2 = new Vector2(-1, -1);
+	constructor(position : Vector2, onSelect : PuzzleToggleItemCallback, onDeselect : PuzzleToggleItemCallback)
 	{
-		this.listener.attach(this.Update.bind(this));
+		this.position = position;
+		this.element = document.createElement("canvas");
+		this.element.classList.add("piece");	
+		this.element.dataset.x = position.x + "";
+		this.element.dataset.y = position.y + "";
 
-		const pieceElements : NodeListOf<Element> = rootElement.querySelectorAll("#playfield .piece");
-		if (pieceElements.length <= 0)
+		this.element.addEventListener("touchstart",   ()=>{onSelect(this)});
+		this.element.addEventListener("touchend",   ()=>{onDeselect(this)});
+		this.element.addEventListener("mousedown",    ()=>{onSelect(this)});
+		this.element.addEventListener("mouseup",    ()=>{onDeselect(this)});
+	}
+	moveBy(delta : Vector2)
+	{
+		const oldPosition = Vector2.fromString(this.element.style.left || "0", this.element.style.top || "0");
+		this.element.style.left = (oldPosition.x + delta.x) + "px";
+		this.element.style.top = (oldPosition.y + delta.y) + "px";
+	}
+}
+
+class PieceGrid
+{
+	data : Piece[][] = [];
+	maxSize : Vector2;
+	constructor(dimensions : Vector2, onSelect : PuzzleToggleItemCallback, onDeselect : PuzzleToggleItemCallback)
+	{
+		this.maxSize = dimensions;
+		for (let x : number = 0; x < this.maxSize.x; x++)
 		{
-			console.error("%o is not a valid puzzle-element! Missing piece-elements", rootElement);
+			this.data[x] = [];
+			for (let y : number = 0; y < this.maxSize.y; y++)
+			{
+				const position = new Vector2(x, y);
+				this.data[x][y] = new Piece(position, onSelect, onDeselect);
+			}
+		}
+	}
+
+	item(position : Vector2) : Piece | null
+	{
+		if (position.x >= this.maxSize.x)
+		{
+			console.error(`Attempting to access grid column ${position.x}, which is bigger than ${this.maxSize.x-1}!`);
+			return null;
+		}
+		if (position.y >= this.maxSize.y)
+		{
+			console.error(`Attempting to access grid row ${position.y}, which is bigger than ${this.maxSize.y-1}!`);
+			return null;
 		}
 
-		pieceElements.forEach((item : Element) =>
+		return this.data[position.x][position.y];
+	}
+
+	itemFromElement(element : HTMLElement)
+	{
+		if (typeof element.dataset.x == "undefined" || typeof element.dataset.y == "undefined")
 		{
-			this.pieces.push(<HTMLElement>item);
-			this.setupPieceEvents(<HTMLElement>item);
-		});
+			console.error("Cannot look up element %o in grid, as it's not a valid piece!", element);
+		}
+		return this.item(Vector2.fromString(element.dataset.x as string, element.dataset.y as string));
+	}
+}
+
+class Puzzle
+{
+	rootElement : HTMLElement;
+	pieces : PieceGrid;
+	activePiece : Piece | null = null;
+
+	listener : PuzzlePieceMouseListener;
+
+	constructor(rootElement : HTMLElement, dimensions : Vector2)
+	{
+		this.rootElement = <HTMLElement>rootElement;
+
+		this.listener = new PuzzlePieceMouseListener();
+		this.pieces = new PieceGrid(dimensions, this.onSelectItem.bind(this), this.onDeselectItem.bind(this));
+
+		this.GenerateGrid();
+
+		this.listener.attach(this.Update.bind(this));
 	}
 
-	private setupPieceEvents(item : HTMLElement)
+	private GenerateGrid()
 	{
-		item.addEventListener("touchstart", this.selectItem.bind(this));
-		item.addEventListener("touchend", this.deselectItem.bind(this));
-		item.addEventListener("mousedown", this.selectItem.bind(this));
-		item.addEventListener("mouseup", this.deselectItem.bind(this));
-	}
-
-	private isMouseEvent(event: Event) : event is MouseEvent
-	{
-	  return 'target' in event;
-	}
-
-	private isTouchEvent(event: Event) : event is TouchEvent
-	{
-	  return 'touches' in event;
-	}
-
-	private selectItem(event : Event)
-	{
-		event.preventDefault();
-		if (this.activePiece)
+		for (let x : number = 0; x < this.pieces.maxSize.x; x++)
 		{
-			console.error("Trying to select a new item, while another one is still selected");
+			for (let y : number = 0; y < this.pieces.maxSize.y; y++)
+			{
+				const position = new Vector2(x, y);
+				const item = this.pieces.item(position);
+				if (item == null)
+				{
+					break;
+				}
+				this.rootElement.appendChild((item as Piece).element);
+			}
+		}
+	}
+
+	private onSelectItem(piece : Piece)
+	{
+		console.log("Selecting element %o [%d, %d]", piece.element, piece.position.x, piece.position.y);
+
+		if (this.activePiece != null)
+		{
+			console.error("Cannot select a new piece, as there is still another one selected");
 			return;
 		}
 
-		if (!this.isMouseEvent(event) && !this.isTouchEvent(event))
-		{
-			console.error("Invalid event passed to method");
-		}
-
-		if (this.isMouseEvent(event))
-		{
-			this.listener.UpdatePosition(new Position(event.clientX, event.clientY));
-			this.activePiece = <HTMLElement>event.target;
-		}
-
-		if (this.isTouchEvent(event))
-		{
-			if (event.touches.item(0) == null)
-			{
-				return;
-			}
-			const firstTouch : Touch = event.touches.item(0) as Touch;
-			this.listener.UpdatePosition(new Position(firstTouch.screenX, firstTouch.screenY));
-			this.activePiece = <HTMLElement>firstTouch.target;
-		}
+		this.activePiece = piece;
 	}
 
-	private deselectItem(event : Event)
+	private onDeselectItem(piece : Piece)
 	{
-		event.preventDefault();
-		if (this.activePiece != event.target)
+		console.log("Attempting to deselect element %o [%d, %d]", piece.element, piece.position.x, piece.position.y);
+
+		if (this.activePiece != piece)
 		{
 			console.error("The item to be deselected does not match the currently selected element");
 			return;
 		}
 
-		if (!this.isMouseEvent(event) && !this.isTouchEvent(event))
-		{
-			console.error("Invalid event passed to method");
-		}
+		this.fixPosition(piece);
 
 		this.activePiece = null;
 	}
 
-	private Update(lastPosition : Position, newPosition : Position, deltaPosition : Position)
+	private fixPosition(piece : Piece)
+	{
+		const pieceBounds = piece.element.getBoundingClientRect();
+		const boardBounds = this.rootElement.parentNode.getBoundingClientRect();
+		const helperPadding = 10;
+
+		let overlap : Vector2 = new Vector2();
+		if (pieceBounds.left < boardBounds.left)
+		{
+			overlap.x += boardBounds.left - pieceBounds.left + helperPadding;
+		}
+		if (pieceBounds.right > boardBounds.right)
+		{
+			overlap.x -= pieceBounds.right - boardBounds.right + helperPadding;
+		}
+		if (pieceBounds.top < boardBounds.top)
+		{
+			overlap.y += boardBounds.top - pieceBounds.top + helperPadding;
+		}
+		if (pieceBounds.bottom > boardBounds.bottom)
+		{
+			overlap.y -= pieceBounds.bottom - boardBounds.bottom + helperPadding;
+		}
+
+		console.log("Correcting piece %o by [%d, %d] to stay in frame", piece, overlap.x, overlap.y);
+		piece.moveBy(overlap);
+	}
+
+	private Update(lastPosition : Vector2, newPosition : Vector2, deltaPosition : Vector2)
 	{
 		if (this.activePiece == null)
 		{
 			return;
 		}
-		const oldPosition = Position.fromString(this.activePiece.style.left || "0", this.activePiece.style.top || "0");
-		this.activePiece.style.left = (oldPosition.x + deltaPosition.x) + "px";
-		this.activePiece.style.top = (oldPosition.y + deltaPosition.y) + "px";
+
+		this.activePiece.moveBy(deltaPosition);
 	}
 };
 
 window.addEventListener("load", () =>
 {
-	const PuzzleLogic : Puzzle = new Puzzle(document.querySelector("#puzzle") as Element);
+	const PuzzleLogic : Puzzle = new Puzzle(document.querySelector("#puzzle #playfield") as HTMLElement, new Vector2(5, 5));
 });

@@ -24,7 +24,7 @@ class WebClientServer
 
 				const extname : string = path.extname(filePath);
 				let contentType : string = 'text/html';
-				switch (extname) {
+				switch (extname) { 
 					case '.js':
 						contentType = 'text/javascript';
 						break;
@@ -42,13 +42,15 @@ class WebClientServer
 						break;
 				}
 
+				console.log(`Handling request for ${filePath}...`);
+
 				fs.readFile(filePath, function(error : Error, content : Buffer) {
 					if (error)
 					{
 						console.group("Couldn't handle request");
 						console.error(error);
 						console.groupEnd();
-						fs.readFile('./index.html', function(error : Error, content : Buffer) {
+						fs.readFile(rootFolder + '/index.html', function(error : Error, content : Buffer) {
 							if (error)
 							{
 								response.writeHead(500);
