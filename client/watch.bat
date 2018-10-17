@@ -1,3 +1,3 @@
 title CLIENT WATCHER
-tsc -w
+npm run watch
 @pause

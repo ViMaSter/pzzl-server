@@ -1,3 +1,3 @@
 title SERVER WATCHER
-tsc -w
+npm run watch
 @pause

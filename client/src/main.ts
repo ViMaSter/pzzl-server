@@ -1,24 +1,4 @@
-class Vector2
-{
-	x : number = 0;
-	y : number = 0;
-	constructor(x : number = 0, y : number = 0)
-	{
-		this.x = x;
-		this.y = y;
-	}
-	static fromString(x : string, y : string) : Vector2
-	{
-		return new Vector2(parseInt(x), parseInt(y));
-	}
-	static delta(posA : Vector2, posB : Vector2) : Vector2
-	{
-		return new Vector2(
-			posA.x - posB.x,
-			posA.y - posB.y
-		);
-	}
-}
+import {Vector2 as Vector2} from "./util/Vector2.ts"
 
 type PuzzlePieceMouseListenerCallback = (lastPosition : Vector2, newPosition : Vector2, deltaPosition : Vector2) => void;
 type PuzzleToggleItemCallback = (piece : Piece) => void;
@@ -99,10 +79,10 @@ class Piece
 		this.element.dataset.x = position.x + "";
 		this.element.dataset.y = position.y + "";
 
-		this.element.addEventListener("touchstart",   ()=>{onSelect(this)});
-		this.element.addEventListener("touchend",   ()=>{onDeselect(this)});
-		this.element.addEventListener("mousedown",    ()=>{onSelect(this)});
-		this.element.addEventListener("mouseup",    ()=>{onDeselect(this)});
+		this.element.addEventListener(	"touchstart",	()=>{onSelect(this)});
+		this.element.addEventListener(	"mousedown",	()=>{onSelect(this)});
+		window.addEventListener(		"touchend",		()=>{onDeselect(this)});
+		window.addEventListener(		"mouseup",		()=>{onDeselect(this)});
 	}
 	moveBy(delta : Vector2)
 	{
@@ -159,6 +139,7 @@ class PieceGrid
 class Puzzle
 {
 	rootElement : HTMLElement;
+	playingField : HTMLElement;
 	pieces : PieceGrid;
 	activePiece : Piece | null = null;
 
@@ -167,6 +148,7 @@ class Puzzle
 	constructor(rootElement : HTMLElement, dimensions : Vector2)
 	{
 		this.rootElement = <HTMLElement>rootElement;
+		this.playingField = <HTMLElement>this.rootElement.querySelector("#playingfield");
 
 		this.listener = new PuzzlePieceMouseListener();
 		this.pieces = new PieceGrid(dimensions, this.onSelectItem.bind(this), this.onDeselectItem.bind(this));
@@ -188,7 +170,7 @@ class Puzzle
 				{
 					break;
 				}
-				this.rootElement.appendChild((item as Piece).element);
+				this.playingField.appendChild((item as Piece).element);
 			}
 		}
 	}
@@ -208,15 +190,13 @@ class Puzzle
 
 	private onDeselectItem(piece : Piece)
 	{
-		console.log("Attempting to deselect element %o [%d, %d]", piece.element, piece.position.x, piece.position.y);
-
-		if (this.activePiece != piece)
+		if (this.activePiece == null)
 		{
-			console.error("The item to be deselected does not match the currently selected element");
 			return;
 		}
 
-		this.fixPosition(piece);
+		console.log("Attempting to deselect element %o [%d, %d]", piece.element, piece.position.x, piece.position.y);
+		this.fixPosition(<Piece>this.activePiece);
 
 		this.activePiece = null;
 	}
@@ -224,7 +204,7 @@ class Puzzle
 	private fixPosition(piece : Piece)
 	{
 		const pieceBounds = piece.element.getBoundingClientRect();
-		const boardBounds = this.rootElement.parentNode.getBoundingClientRect();
+		const boardBounds = this.rootElement.getBoundingClientRect();
 		const helperPadding = 10;
 
 		let overlap : Vector2 = new Vector2();
@@ -262,5 +242,5 @@ class Puzzle
 
 window.addEventListener("load", () =>
 {
-	const PuzzleLogic : Puzzle = new Puzzle(document.querySelector("#puzzle #playfield") as HTMLElement, new Vector2(5, 5));
+	const PuzzleLogic : Puzzle = new Puzzle(document.querySelector("#puzzle") as HTMLElement, new Vector2(5, 5));
 });
