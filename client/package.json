@@ -4,7 +4,7 @@
   "description": "Server for a multiplayer jigsaw-puzzle app",
   "main": "./index.js",
   "scripts": {
-    "watch": "webpack --config webpack-dev.config.js"
+    "watch": "webpack --config conf/dev.config.js"
   },
   "repository": {
     "type": "git",

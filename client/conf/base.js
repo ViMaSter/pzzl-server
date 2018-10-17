@@ -1,5 +1,9 @@
 const path = require('path');
 
+const srcPath = function(subdir) {
+    return path.join(__dirname, "..", "src", subdir);
+}
+
 module.exports = {
 	entry: './src/main.ts',
     devtool: 'inline-source-map',
@@ -13,11 +17,14 @@ module.exports = {
 		]
 	},
 	resolve: {
-		extensions: [ '.tsx', '.ts', '.js' ]
+		extensions: [ '.tsx', '.ts', '.js' ],
+        alias: {
+            util: srcPath('util'),
+            game: srcPath('game')
+        }
 	},
 	output: {
 		filename: 'bundle.js',
 		path: path.resolve(__dirname, "..", "server", "html", "js")
 	},
- 	mode: "production"
 };
