@@ -1,5 +1,5 @@
-import {Vector2 as Vector2} from "./../util/Vector2"
-import * as PuzzlePiece from "./Piece"
+import {Vector2 as Vector2} from "util/Vector2"
+import * as PuzzlePiece from "game/Piece"
 
 export class Puzzle
 {

@@ -25,6 +25,6 @@ module.exports = {
 	},
 	output: {
 		filename: 'bundle.js',
-		path: path.resolve(__dirname, "..", "server", "html", "js")
+		path: path.resolve(__dirname, "..", "..", "server", "html", "js")
 	},
 };
