@@ -1,0 +1,1 @@
+call node lib/index.js

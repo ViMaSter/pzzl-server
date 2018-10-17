@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Puzzle Client</title>
+	<script type="text/javascript" src="js/main.js"></script>
+	<style type="text/css">
+
+		#puzzle
+		{
+			position: absolute;
+			top: 0px;
+			left: 0px;
+
+			display: block;
+
+			width: 100vw;
+			height: 400px;
+
+			overflow: hidden;
+		}
+		#playfield
+		{
+			display: block;
+
+			position: relative;
+
+			width: 400px;
+			height: 400px;
+			margin: auto;
+			background: darkgrey;
+		}
+
+		#puzzle .piece
+		{
+			display: block;
+			position: absolute;
+			top: 0px;
+			left: 0px;
+			background: grey;
+			width: 20px;
+			height: 20px;
+		}
+	</style>
+	<meta name="viewport" content="width=device-width, user-scalable=no">
+</head>
+<body>
+	<div id="puzzle">
+		<div id="playfield">
+			<canvas class="piece" data-index="0"></canvas>
+			<canvas class="piece" data-index="1"></canvas>
+			<canvas class="piece" data-index="2"></canvas>
+			<canvas class="piece" data-index="3"></canvas>
+			<canvas class="piece" data-index="4"></canvas>
+			<canvas class="piece" data-index="5"></canvas>
+			<canvas class="piece" data-index="6"></canvas>
+			<canvas class="piece" data-index="7"></canvas>
+			<canvas class="piece" data-index="8"></canvas>
+			<canvas class="piece" data-index="9"></canvas>
+			<canvas class="piece" data-index="10"></canvas>
+			<canvas class="piece" data-index="11"></canvas>
+			<canvas class="piece" data-index="12"></canvas>
+			<canvas class="piece" data-index="13"></canvas>
+			<canvas class="piece" data-index="14"></canvas>
+			<canvas class="piece" data-index="15"></canvas>
+			<canvas class="piece" data-index="16"></canvas>
+			<canvas class="piece" data-index="17"></canvas>
+			<canvas class="piece" data-index="18"></canvas>
+			<canvas class="piece" data-index="19"></canvas>
+			<canvas class="piece" data-index="20"></canvas>
+			<canvas class="piece" data-index="21"></canvas>
+			<canvas class="piece" data-index="22"></canvas>
+			<canvas class="piece" data-index="23"></canvas>
+			<canvas class="piece" data-index="24"></canvas>
+		</div>
+	</div>
+</body>
+</html>
