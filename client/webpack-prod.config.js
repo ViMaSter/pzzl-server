@@ -19,5 +19,5 @@ module.exports = {
 		filename: 'bundle.js',
 		path: path.resolve(__dirname, "..", "server", "html", "js")
 	},
- 	watch: true
+ 	mode: "production"
 };
