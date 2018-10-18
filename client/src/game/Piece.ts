@@ -1,7 +1,6 @@
 import {Vector2 as Vector2} from "util/Vector2"
 
 export type MouseListenerCallback = (lastPosition : Vector2, newPosition : Vector2, deltaPosition : Vector2) => void;
-export type ToggleItemCallback = (piece : Piece) => void;
 export class MouseListener
 {
 	lastPosition : Vector2 = new Vector2(-1, -1);
@@ -67,6 +66,7 @@ export class MouseListener
 	}
 }
 
+export type ToggleItemCallback = (piece : Piece) => void;
 export class Piece
 {
 	element : HTMLCanvasElement;

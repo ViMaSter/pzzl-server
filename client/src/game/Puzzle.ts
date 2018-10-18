@@ -1,6 +1,7 @@
 import {Vector2 as Vector2} from "util/Vector2"
 import {Rect as Rect} from "util/Rect"
 import * as PuzzlePiece from "game/Piece"
+import {MouseListener as MouseListener} from "util/MouseListener"
 
 export class Puzzle
 {
@@ -10,14 +11,14 @@ export class Puzzle
 	pieces : PuzzlePiece.PieceGrid;
 	activePiece : PuzzlePiece.Piece | null = null;
 
-	listener : PuzzlePiece.MouseListener;
+	listener : MouseListener;
 
 	constructor(rootElement : HTMLElement, dimensions : Vector2)
 	{
 		this.rootElement = <HTMLElement>rootElement;
 		this.playingField = <HTMLElement>this.rootElement.querySelector("#playingfield");
 
-		this.listener = new PuzzlePiece.MouseListener();
+		this.listener = new MouseListener();
 		this.pieces = new PuzzlePiece.PieceGrid(dimensions, this.onSelectItem.bind(this), this.onDeselectItem.bind(this));
 
 		this.GenerateGrid();
