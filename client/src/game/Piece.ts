@@ -69,7 +69,7 @@ export class MouseListener
 
 export class Piece
 {
-	element : HTMLElement;
+	element : HTMLCanvasElement;
 	position : Vector2 = new Vector2(-1, -1);
 	constructor(position : Vector2, onSelect : ToggleItemCallback, onDeselect : ToggleItemCallback)
 	{
@@ -78,11 +78,21 @@ export class Piece
 		this.element.classList.add("piece");	
 		this.element.dataset.x = position.x + "";
 		this.element.dataset.y = position.y + "";
+		this.element.width = 50;
+		this.element.height = 50;
 
 		this.element.addEventListener(	"touchstart",	()=>{onSelect(this)});
 		this.element.addEventListener(	"mousedown",	()=>{onSelect(this)});
 		window.addEventListener(		"touchend",		()=>{onDeselect(this)});
 		window.addEventListener(		"mouseup",		()=>{onDeselect(this)});
+
+		this.setupDebugText();
+	}
+	setupDebugText()
+	{
+		const context : CanvasRenderingContext2D = <CanvasRenderingContext2D>this.element.getContext("2d");
+		context.font = "20px Arial";
+		context.fillText(`[${this.position.x}, ${this.position.y}]`, 0, 40);
 	}
 	moveBy(delta : Vector2)
 	{

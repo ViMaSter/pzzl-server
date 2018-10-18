@@ -1,8 +1,10 @@
 import {Vector2 as Vector2} from "util/Vector2"
+import {Rect as Rect} from "util/Rect"
 import * as PuzzlePiece from "game/Piece"
 
 export class Puzzle
 {
+	// Main
 	rootElement : HTMLElement;
 	playingField : HTMLElement;
 	pieces : PuzzlePiece.PieceGrid;
@@ -20,7 +22,7 @@ export class Puzzle
 
 		this.GenerateGrid();
 
-		this.listener.attach(this.Update.bind(this));
+		this.listener.attach(this.CursorPositionUpdate.bind(this));
 	}
 
 	private GenerateGrid()
@@ -40,6 +42,7 @@ export class Puzzle
 		}
 	}
 
+	// User interaction callbacks
 	private onSelectItem(piece : PuzzlePiece.Piece)
 	{
 		console.log("Selecting element %o [%d, %d]", piece.element, piece.position.x, piece.position.y);
@@ -63,9 +66,51 @@ export class Puzzle
 		console.log("Attempting to deselect element %o [%d, %d]", piece.element, piece.position.x, piece.position.y);
 		this.fixPosition(<PuzzlePiece.Piece>this.activePiece);
 
+		this.checkForOverlap(this.activePiece);
+
 		this.activePiece = null;
 	}
 
+	// Snapping and overlapping
+	private handleOverlap(droppedPiece : PuzzlePiece.Piece, collider : PuzzlePiece.Piece)
+	{
+		// @TODO handle proper snapping here
+		console.log(`[${droppedPiece.position.x}, ${droppedPiece.position.y}] collides with [${collider.position.x}, ${collider.position.y}]`);
+	}
+
+	private checkForOverlap(piece : PuzzlePiece.Piece)
+	{
+		const currentRect : ClientRect = piece.element.getBoundingClientRect() as ClientRect;
+		let overlaps :PuzzlePiece.Piece[] = [];
+
+		for (let x : number = 0; x < this.pieces.maxSize.x; x++)
+		{
+			for (let y : number = 0; y < this.pieces.maxSize.y; y++)
+			{
+				if (x == piece.position.x && y == piece.position.y)
+				{
+					continue;
+				}
+
+				const position : Vector2 = new Vector2(x, y);
+				const item : PuzzlePiece.Piece = this.pieces.item(position) as PuzzlePiece.Piece;
+				if (Rect.Overlaps(currentRect, item.element.getBoundingClientRect()))
+				{
+					overlaps.push(item);
+				}
+			}
+		}
+		
+		if (overlaps.length > 0)
+		{
+			overlaps.forEach((item) =>
+			{
+				this.handleOverlap(piece, item);
+			});
+		}
+	}
+
+	// Out-of-screen helper
 	private fixPosition(piece : PuzzlePiece.Piece)
 	{
 		const pieceBounds = piece.element.getBoundingClientRect();
@@ -94,7 +139,7 @@ export class Puzzle
 		piece.moveBy(overlap);
 	}
 
-	private Update(lastPosition : Vector2, newPosition : Vector2, deltaPosition : Vector2)
+	private CursorPositionUpdate(lastPosition : Vector2, newPosition : Vector2, deltaPosition : Vector2)
 	{
 		if (this.activePiece == null)
 		{
