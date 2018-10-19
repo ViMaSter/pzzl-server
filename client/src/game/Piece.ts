@@ -60,9 +60,13 @@ export class Piece
 		this.setupDebugText();
 	}
 
-	getNeighbor(direction : NeighborDirection) : Piece | undefined
+	hasNeighbor(direction : NeighborDirection) : boolean
 	{
-		return this.neighbors.get(direction.Name);
+		return this.neighbors.get(direction.Name) != undefined;
+	}
+	getNeighbor(direction : NeighborDirection) : Piece
+	{
+		return <Piece>this.neighbors.get(direction.Name);
 	}
 
 	setNeighbor(direction : NeighborDirection, newNeighbor : Piece) : boolean

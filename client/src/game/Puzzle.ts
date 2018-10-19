@@ -3,6 +3,29 @@ import {Rect as Rect} from "util/Rect"
 import * as PuzzlePiece from "game/Piece"
 import {MouseListener as MouseListener} from "util/MouseListener"
 
+class PuzzlePieceConnection
+{
+	private affectedPiece : PuzzlePiece.Piece
+	private direction : PuzzlePiece.NeighborDirection|null;
+	private sourcePiece : PuzzlePiece.Piece|null;
+
+	getAffectedPiece() : PuzzlePiece.Piece { return this.affectedPiece; }
+	getDirection() : PuzzlePiece.NeighborDirection { return <PuzzlePiece.NeighborDirection>this.direction; }
+	getSourcePiece() : PuzzlePiece.Piece { return <PuzzlePiece.Piece>this.sourcePiece; }
+
+	isSourcePiece() : boolean
+	{
+		return this.direction == null && this.sourcePiece == null;
+	}
+
+	constructor(affectedPiece : PuzzlePiece.Piece, direction : PuzzlePiece.NeighborDirection|null = null, sourcePiece : PuzzlePiece.Piece|null = null)
+	{
+		this.affectedPiece = affectedPiece;
+		this.direction = direction;
+		this.sourcePiece = sourcePiece;			
+	}
+}
+
 export class Puzzle
 {
 	// Main
@@ -180,33 +203,44 @@ export class Puzzle
 	private fixChildPosition(piece : PuzzlePiece.Piece)
 	{
 		let itemsProcessed : PuzzlePiece.Piece[] = [];
-		let itemsToProcess : [PuzzlePiece.Piece|null, PuzzlePiece.NeighborDirection|null, PuzzlePiece.Piece][] = [[null, null, piece]];
+		// Set the piece the player interacted with as starting point
+		let itemsToProcess : PuzzlePieceConnection[] = [new PuzzlePieceConnection(piece, null, null)];
 
+		// While we have pieces to process...
 		while(itemsToProcess.length > 0)
 		{
-			const nextItem : [PuzzlePiece.Piece|null, PuzzlePiece.NeighborDirection|null, PuzzlePiece.Piece] =<[PuzzlePiece.Piece|null, PuzzlePiece.NeighborDirection|null, PuzzlePiece.Piece]>itemsToProcess.shift();
-			itemsProcessed.push(nextItem[2]);
+			const nextConnection : PuzzlePieceConnection = <PuzzlePieceConnection>itemsToProcess.shift();
+			// ...mark the affected piece as processed
+			itemsProcessed.push(nextConnection.getAffectedPiece());
 
+			// ...find all valid neighbors and mark them as "to be processed"
 			PuzzlePiece.NeighborDirection.ForEach((direction : PuzzlePiece.NeighborDirection) =>
 			{
-				if (nextItem[2].getNeighbor(direction) == undefined)
+				// ...check if we have a neighbor in this direction
+				if (!nextConnection.getAffectedPiece().hasNeighbor(direction))
 				{
 					return;
 				}
-				const neighborElement = <PuzzlePiece.Piece>nextItem[2].getNeighbor(direction);
+				// ...if so, check if we've already touched it
+				const neighborElement = nextConnection.getAffectedPiece().getNeighbor(direction);
 				if (itemsProcessed.indexOf(neighborElement) != -1)
 				{
 					return;
 				}
-				itemsToProcess.push([nextItem[2], direction, neighborElement]);
+				// ...if not, mark it as "to be processed"
+				itemsToProcess.push(new PuzzlePieceConnection(neighborElement, direction, nextConnection.getAffectedPiece()));
 			});
 
-			if (nextItem[1] == null)
+			// ...the source block initiating this process doesn't need to be moved (it's movement is what causes connected pieces to follow)
+			if (nextConnection.isSourcePiece())
 			{
 				continue;
 			}
-			const oppositeDirection = PuzzlePiece.NeighborDirection.Opposite(<PuzzlePiece.NeighborDirection>nextItem[1]);
-			nextItem[2].moveTo(Vector2.add((<PuzzlePiece.Piece>nextItem[0]).getPosition(), Vector2.multiply(oppositeDirection.Position, 50)));
+
+			// ...check which direction this block has been a neighbor in and reverse it (if we're a left-side neighbor, we need to move to the )
+			const oppositeDirection = PuzzlePiece.NeighborDirection.Opposite(nextConnection.getDirection());
+			// ...take the piece we're a neighbor of and offset this piece accordingly
+			nextConnection.getAffectedPiece().moveTo(Vector2.add(nextConnection.getSourcePiece().getPosition(), Vector2.multiply(oppositeDirection.Position, 50)));
 		}
 	}
 };
