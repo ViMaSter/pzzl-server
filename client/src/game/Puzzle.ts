@@ -52,7 +52,70 @@ export class Puzzle
 
 		this.DrawImage(<HTMLImageElement>document.querySelector("img"));
 
+		this.ShufflePieces();
+
 		this.listener.attach(this.CursorPositionUpdate.bind(this));
+	}
+
+	private ShufflePieces()
+	{
+		let shuffle : (a : any[]) => any[]= (a : any[]) => {
+			for (let i = a.length - 1; i > 0; i--) {
+				const j = Math.floor(Math.random() * (i + 1));
+				[a[i], a[j]] = [a[j], a[i]];
+			}
+			return a;
+		}
+
+		const pieceAmount : number = this.pieces.maxSize.x * this.pieces.maxSize.y;
+		let passedElements : number = 0;
+		let passedHalf : boolean = false;
+		const padding : number = 10;
+		const availableSlots : Vector2 = new Vector2(
+			Math.floor((this.rootElement.getBoundingClientRect() as ClientRect).width / (this.pieces.pieceSize.x + padding*2)),
+			Math.floor((this.rootElement.getBoundingClientRect() as ClientRect).height / (this.pieces.pieceSize.y + padding*2))
+		);
+		let currentSlot : Vector2 = new Vector2(0, 0);
+
+		let order : number[][] = [];
+		order[0] = shuffle([...Array(this.pieces.maxSize.x).keys()]);
+		for (let x : number = 0; x < this.pieces.maxSize.x; x++)
+		{
+			order[1] = shuffle([...Array(this.pieces.maxSize.y).keys()]);
+			for (let y : number = 0; y < this.pieces.maxSize.y; y++)
+			{
+				const position = new Vector2(order[0][x], order[1][y]);
+				const item = this.pieces.item(position);
+				if (item == null)
+				{
+					break;
+				}
+
+				let moveToPosition = Vector2.multiply(currentSlot, Vector2.add(this.pieces.pieceSize, new Vector2(padding, padding)));
+				moveToPosition = Vector2.add(moveToPosition, new Vector2(padding, padding));
+				if (passedHalf)
+				{
+					moveToPosition.x = (this.rootElement.getBoundingClientRect() as ClientRect).width - (moveToPosition.x + this.pieces.pieceSize.x);
+				}
+				moveToPosition.x -= ((this.rootElement.getBoundingClientRect() as ClientRect).width - (this.playingField.getBoundingClientRect() as ClientRect).width) / 2
+				item.moveTo(moveToPosition);
+
+				passedElements++;
+				if (!passedHalf && passedElements > Math.floor(pieceAmount/2))
+				{
+					passedHalf = true;
+					currentSlot.x = 0;
+					currentSlot.y = -1;
+				}
+
+				currentSlot.y++;
+				if (currentSlot.y >= availableSlots.y)
+				{
+					currentSlot.y = 0;
+					currentSlot.x++;
+				}
+			}
+		}
 	}
 
 	private DrawImage(imageElement : HTMLImageElement)

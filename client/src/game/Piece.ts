@@ -104,6 +104,7 @@ export class Piece
 	{
 		const context : CanvasRenderingContext2D = <CanvasRenderingContext2D>this.element.getContext("2d");
 		context.font = "20px Arial";
+		context.fillStyle = 'white';
 		context.fillText(`[${this.position.x}, ${this.position.y}]`, 0, 40);
 	}
 
