@@ -34,12 +34,95 @@ export class NeighborDirection {
     }
 };
 
+export const enum Shape
+{
+	NONE = -1,
+	Sphere = 0,
+	Triangle = 1,
+}
+
+export class IntersectionDescription
+{
+	outwards : boolean;
+	shape : Shape;
+	outwardishSideCurvature : number;
+	size : Vector2;
+	offset : Vector2
+	private constructor(outwards : boolean, shape : Shape, outwardishSideCurvature : number, size : Vector2, offset : Vector2)
+	{
+		this.outwards = outwards;
+		this.shape = shape;
+		this.outwardishSideCurvature = outwardishSideCurvature;
+		this.size = size;
+		this.offset = offset;
+	}
+
+	static CreateDefault()
+	{
+		return this.CreateNew(true, Shape.NONE, 0, new Vector2(1, 1), new Vector2(0, 1));
+	}
+
+	static CreateNew(outwards : boolean, shape : Shape, outwardishSideCurvature : number, size : Vector2|null, offset : Vector2|null)
+	{
+		const finalSize : Vector2 = size == null ? new Vector2(1, 1) : size;
+		const finalOffset : Vector2 = offset == null ? new Vector2(1, 1) : offset;
+		return new IntersectionDescription(outwards, shape, outwardishSideCurvature, finalSize, finalOffset);
+	}
+
+	static CreateCounter(sourceDirection : NeighborDirection, sourceIntersection : IntersectionDescription)
+	{
+		const offsetModifier = new Vector2(
+			sourceDirection == NeighborDirection.Up || sourceDirection == NeighborDirection.Down ? -1 : 1,
+			sourceDirection == NeighborDirection.Left || sourceDirection == NeighborDirection.Right ? -1 : 1
+		);
+		return this.CreateNew(
+			!sourceIntersection.outwards,
+			sourceIntersection.shape,
+			-sourceIntersection.outwardishSideCurvature,
+			sourceIntersection.size,
+			Vector2.multiply(sourceIntersection.offset, offsetModifier)
+		);
+	}
+}
+
 export class Piece
 {
 	element : HTMLCanvasElement;
 	position : Vector2 = new Vector2(-1, -1);
 	size : Vector2 = new Vector2(-1, -1);
-	private neighbors : Map<String, Piece> = new Map<String, Piece>();
+	private neighbors : Map<string, Piece> = new Map<string, Piece>();
+	hasNeighbor(direction : NeighborDirection) : boolean
+	{
+		return this.neighbors.get(direction.Name) != undefined;
+	}
+	getNeighbor(direction : NeighborDirection) : Piece
+	{
+		return <Piece>this.neighbors.get(direction.Name);
+	}
+
+	private intersections : Map<string, IntersectionDescription> = new Map<string, IntersectionDescription>();
+	private hasIntersection(direction : NeighborDirection) : boolean
+	{
+		return this.intersections.get(direction.Name) != undefined;
+	}
+	private getIntersection(direction : NeighborDirection) : IntersectionDescription
+	{
+		return this.intersections.get(direction.Name) as IntersectionDescription;
+	}
+
+	getCounterForIntersection(direction : NeighborDirection) : IntersectionDescription
+	{
+		return IntersectionDescription.CreateCounter(direction, this.getIntersection(direction));
+	}
+	setIntersection(direction : NeighborDirection, intersectionDescription : IntersectionDescription)
+	{
+		if (this.hasIntersection(direction))
+		{
+			console.error(`[${this.position.x}, ${this.position.y}] already has a definition for it's ${direction}-intersection`);
+			return;
+		}
+		this.intersections.set(direction.Name, intersectionDescription);
+	}
 
 	constructor(position : Vector2, size : Vector2, onSelect : ToggleItemCallback, onDeselect : ToggleItemCallback)
 	{
@@ -60,17 +143,9 @@ export class Piece
 		this.setupDebugText();
 	}
 
-	hasNeighbor(direction : NeighborDirection) : boolean
-	{
-		return this.neighbors.get(direction.Name) != undefined;
-	}
-	getNeighbor(direction : NeighborDirection) : Piece
-	{
-		return <Piece>this.neighbors.get(direction.Name);
-	}
-
 	setNeighbor(direction : NeighborDirection, newNeighbor : Piece) : boolean
 	{
+		// set neighbor on this piece
 		const expectedNeighborPosition = Vector2.add(this.position, direction.Position);
 		if (!Vector2.equal(expectedNeighborPosition, newNeighbor.position))
 		{
@@ -86,7 +161,7 @@ export class Piece
 		this.neighbors.set(direction.Name, newNeighbor);
 		console.log(`Piece [${newNeighbor.position.x}, ${newNeighbor.position.y}] is now the ${direction.Name}-neighbor of [${this.position.x}, ${this.position.y}]`);
 
-
+		// set this piece as neighbor on the neighboring piece
 		const opposite : NeighborDirection = NeighborDirection.Opposite(direction);
 		
 		if (newNeighbor.neighbors.get(opposite.Name) != undefined)
@@ -140,7 +215,34 @@ export class PieceGrid
 			for (let y : number = 0; y < this.maxSize.y; y++)
 			{
 				const position = new Vector2(x, y);
+
+				// Create new piece
 				this.data[x][y] = new Piece(position, pieceSize, onSelect, onDeselect);
+
+				// Create intersections...
+				NeighborDirection.ForEach((direction : NeighborDirection) =>
+				{
+					// ...that are solid for border pieces
+					if ((y == 0 && direction == NeighborDirection.Up) ||
+						(x == 0 && direction == NeighborDirection.Left) ||
+						(x == this.maxSize.x-1 && direction == NeighborDirection.Right) ||
+						(y == this.maxSize.y-1 && direction == NeighborDirection.Down))
+					{
+						this.data[x][y].setIntersection(direction, IntersectionDescription.CreateDefault());
+						return;
+					}
+
+					// If we have don't have neighbors in a direction...
+					const precedingNeighbor : Piece | null = this.item(Vector2.add(position, direction.Position));
+					if (precedingNeighbor == null)
+					{
+						// ...create our own
+						this.data[x][y].setIntersection(direction, IntersectionDescription.CreateNew(true, Shape.Sphere, 0.4, new Vector2(1.5, 0.5), new Vector2(0.5, 0.5)));
+						return;
+					}
+					// ...otherwise create counter for the intersection of the preceding piece
+					this.data[x][y].setIntersection(direction, (<Piece>precedingNeighbor).getCounterForIntersection(NeighborDirection.Opposite(direction)));
+				});
 			}
 		}
 	}
@@ -149,12 +251,27 @@ export class PieceGrid
 	{
 		if (position.x >= this.maxSize.x)
 		{
-			console.error(`Attempting to access grid column ${position.x}, which is bigger than ${this.maxSize.x-1}!`);
+			console.error(`Attempting to access grid column ${position.x}, which is bigger than ${this.maxSize.x-1}`);
 			return null;
 		}
 		if (position.y >= this.maxSize.y)
 		{
-			console.error(`Attempting to access grid row ${position.y}, which is bigger than ${this.maxSize.y-1}!`);
+			console.error(`Attempting to access grid row ${position.y}, which is bigger than ${this.maxSize.y-1}`);
+			return null;
+		}
+		if (position.x < 0)
+		{
+			console.error(`Attempting to access grid column ${position.x}, which is smaller than 0`);
+			return null;
+		}
+		if (position.y < 0)
+		{
+			console.error(`Attempting to access grid row ${position.y}, which is smaller than 0`);
+			return null;
+		}
+
+		if (typeof this.data[position.x] == "undefined" || typeof this.data[position.x][position.y] == "undefined")
+		{
 			return null;
 		}
 

@@ -30,8 +30,8 @@ export class Vector2
 		if (factor instanceof Vector2)
 		{
 			return new Vector2(
-				posA.x * factor.x,
-				posA.y * factor.y
+				posA.x * (<Vector2>factor).x,
+				posA.y * (<Vector2>factor).y
 			);
 		}
 		console.error("Vector2.multiply used with not supported factor-argument");
