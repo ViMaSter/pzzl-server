@@ -71,9 +71,16 @@ export class Piece
 
 	setNeighbor(direction : NeighborDirection, newNeighbor : Piece) : boolean
 	{
+		const expectedNeighborPosition = Vector2.add(this.position, direction.Position);
+		if (!Vector2.equal(expectedNeighborPosition, newNeighbor.position))
+		{
+			console.warn(`[${newNeighbor.position.x}, ${newNeighbor.position.y}] is not the ${direction.Name}-side neighbor of [${this.position.x}, ${this.position.y}] (expected [${expectedNeighborPosition.x}, ${expectedNeighborPosition.y}])`);
+			return false;
+		}
+
 		if (this.neighbors.get(direction.Name) != undefined)
 		{
-			console.error(`Piece [${this.position.x}, ${this.position.y}] already has a neighbor in direction '${direction}'`);
+			console.error(`Piece [${this.position.x}, ${this.position.y}] already has a neighbor in direction '${direction.Name}'`);
 			return false;
 		}
 		this.neighbors.set(direction.Name, newNeighbor);

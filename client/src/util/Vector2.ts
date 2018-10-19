@@ -44,4 +44,11 @@ export class Vector2
 			posA.y - posB.y
 		);
 	}
+	static equal(posA : Vector2, posB : Vector2) : boolean
+	{
+		return (
+			posA.x == posB.x,
+			posA.y == posB.y
+		);
+	}
 }

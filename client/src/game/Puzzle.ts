@@ -36,10 +36,14 @@ export class Puzzle
 
 	listener : MouseListener;
 
+	snapThresholdInPx : number;
+
 	constructor(rootElement : HTMLElement, dimensions : Vector2)
 	{
 		this.rootElement = <HTMLElement>rootElement;
 		this.playingField = <HTMLElement>this.rootElement.querySelector("#playingfield");
+
+		this.snapThresholdInPx = 10;
 
 		this.listener = new MouseListener();
 		this.pieces = new PuzzlePiece.PieceGrid(dimensions, new Vector2(50, 50), this.onSelectItem.bind(this), this.onDeselectItem.bind(this));
@@ -112,30 +116,29 @@ export class Puzzle
 		const droppedRect : ClientRect = droppedPiece.element.getBoundingClientRect() as ClientRect;
 		const collidingRect : ClientRect = collider.element.getBoundingClientRect() as ClientRect;
 
-		const snapThresholdInPx = 10;
-		let leftInBounds : 		boolean = collidingRect.left >		(droppedRect.left - 	snapThresholdInPx) && collidingRect.left < 		(droppedRect.right + 	snapThresholdInPx);
-		let rightInBounds : 	boolean = collidingRect.right <		(droppedRect.right + 	snapThresholdInPx) && collidingRect.right > 	(droppedRect.left - 	snapThresholdInPx);
-		let topInBounds : 		boolean = collidingRect.top >		(droppedRect.top - 		snapThresholdInPx) && collidingRect.top < 		(droppedRect.bottom +	snapThresholdInPx);
-		let bottomInBounds : 	boolean = collidingRect.bottom <	(droppedRect.bottom +	snapThresholdInPx) && collidingRect.bottom > 	(droppedRect.top - 		snapThresholdInPx);
+		let leftInBounds : 		boolean = droppedRect.left >		(collidingRect.left - 	this.snapThresholdInPx) && droppedRect.left < 		(collidingRect.right + 		this.snapThresholdInPx);
+		let rightInBounds : 	boolean = droppedRect.right <		(collidingRect.right + 	this.snapThresholdInPx) && droppedRect.right > 		(collidingRect.left - 		this.snapThresholdInPx);
+		let bottomInBounds : 	boolean = droppedRect.bottom <		(collidingRect.bottom +	this.snapThresholdInPx) && droppedRect.bottom > 	(collidingRect.top -		this.snapThresholdInPx);
+		let topInBounds : 		boolean = droppedRect.top >			(collidingRect.top -	this.snapThresholdInPx) && droppedRect.top < 		(collidingRect.bottom + 	this.snapThresholdInPx);
 
 		console.log(`[${droppedPiece.position.x}, ${droppedPiece.position.y}] collides with [${collider.position.x}, ${collider.position.y}]`);
 		console.log(`Overlap: left:${leftInBounds} right:${rightInBounds} top:${topInBounds} bottom:${bottomInBounds}`);
 		
 		if (leftInBounds && rightInBounds && !topInBounds && bottomInBounds)
 		{
-			droppedPiece.setNeighbor(PuzzlePiece.NeighborDirection.Up, collider);
+			droppedPiece.setNeighbor(PuzzlePiece.NeighborDirection.Down, collider);
 		}
 		if (leftInBounds && rightInBounds && topInBounds && !bottomInBounds)
 		{
-			droppedPiece.setNeighbor(PuzzlePiece.NeighborDirection.Down, collider);
+			droppedPiece.setNeighbor(PuzzlePiece.NeighborDirection.Up, collider);
 		}
 		if (leftInBounds && !rightInBounds && topInBounds && bottomInBounds)
 		{
-			droppedPiece.setNeighbor(PuzzlePiece.NeighborDirection.Right, collider);
+			droppedPiece.setNeighbor(PuzzlePiece.NeighborDirection.Left, collider);
 		}
 		if (!leftInBounds && rightInBounds && topInBounds && bottomInBounds)
 		{
-			droppedPiece.setNeighbor(PuzzlePiece.NeighborDirection.Left, collider);
+			droppedPiece.setNeighbor(PuzzlePiece.NeighborDirection.Right, collider);
 		}
 	}
 
@@ -146,7 +149,7 @@ export class Puzzle
 
 		for (let x : number = 0; x < this.pieces.maxSize.x; x++)
 		{
-			for (let y : number = 0; y < this.pieces.maxSize.y; y++)
+			for (let y : number = this.pieces.maxSize.y - 1; y >= 0; y--)
 			{
 				if (x == piece.position.x && y == piece.position.y)
 				{
@@ -155,7 +158,7 @@ export class Puzzle
 
 				const position : Vector2 = new Vector2(x, y);
 				const item : PuzzlePiece.Piece = this.pieces.item(position) as PuzzlePiece.Piece;
-				if (Rect.Overlaps(currentRect, item.element.getBoundingClientRect()))
+				if (Rect.OverlapsWithBuffer(currentRect, item.element.getBoundingClientRect(), this.snapThresholdInPx))
 				{
 					overlaps.push(item);
 				}
@@ -164,6 +167,19 @@ export class Puzzle
 		
 		if (overlaps.length > 0)
 		{
+			overlaps = overlaps.filter((item) =>
+			{
+				let notNeighbor = true;
+				PuzzlePiece.NeighborDirection.ForEach((direction : PuzzlePiece.NeighborDirection) =>
+				{
+					if (piece.hasNeighbor(direction) && piece.getNeighbor(direction).position == item.position)
+					{
+						notNeighbor = false;
+						return false;
+					}
+				});
+				return notNeighbor;
+			});
 			overlaps.forEach((item) =>
 			{
 				this.handleOverlap(piece, item);
