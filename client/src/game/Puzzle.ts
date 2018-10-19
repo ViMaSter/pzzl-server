@@ -236,7 +236,7 @@ export class Puzzle
 
 	private checkForOverlap(piece : PuzzlePiece.Piece)
 	{
-		const currentRect : ClientRect = piece.element.getBoundingClientRect() as ClientRect;
+		const currentRect : DOMRect = piece.element.getBoundingClientRect() as DOMRect;
 		let overlaps : PuzzlePiece.Piece[] = [];
 
 		for (let x : number = 0; x < this.pieces.maxSize.x; x++)
@@ -250,7 +250,7 @@ export class Puzzle
 
 				const position : Vector2 = new Vector2(x, y);
 				const item : PuzzlePiece.Piece = this.pieces.item(position) as PuzzlePiece.Piece;
-				if (Rect.OverlapsWithBuffer(currentRect, item.element.getBoundingClientRect(), this.snapThresholdInPx))
+				if (Rect.OverlapsWithBuffer(currentRect, item.element.getBoundingClientRect() as DOMRect, this.snapThresholdInPx))
 				{
 					overlaps.push(item);
 				}
