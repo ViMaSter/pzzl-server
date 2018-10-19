@@ -237,10 +237,8 @@ export class Puzzle
 				continue;
 			}
 
-			// ...check which direction this block has been a neighbor in and reverse it (if we're a left-side neighbor, we need to move to the )
-			const oppositeDirection = PuzzlePiece.NeighborDirection.Opposite(nextConnection.getDirection());
-			// ...take the piece we're a neighbor of and offset this piece accordingly
-			nextConnection.getAffectedPiece().moveTo(Vector2.add(nextConnection.getSourcePiece().getPosition(), Vector2.multiply(oppositeDirection.Position, 50)));
+			// ...take the source piece this piece is a neighbor of (and in which direction) and offset this piece accordingly
+			nextConnection.getAffectedPiece().moveTo(Vector2.add(nextConnection.getSourcePiece().getPosition(), Vector2.multiply(nextConnection.getDirection().Position, 50)));
 		}
 	}
 };

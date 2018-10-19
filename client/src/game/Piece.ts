@@ -11,10 +11,10 @@ export class NeighborDirection {
 		this.Name = Name;		
 		this.Position = Position;
 	}
-    static Up : NeighborDirection = new NeighborDirection("Up", new Vector2(0, 1));
-    static Down : NeighborDirection = new NeighborDirection("Down", new Vector2(0, -1));
-    static Left : NeighborDirection = new NeighborDirection("Left", new Vector2(1, 0));
-    static Right : NeighborDirection = new NeighborDirection("Right", new Vector2(-1, 0));
+    static Up : NeighborDirection = new NeighborDirection("Up", new Vector2(0, -1));
+    static Down : NeighborDirection = new NeighborDirection("Down", new Vector2(0, 1));
+    static Left : NeighborDirection = new NeighborDirection("Left", new Vector2(-1, 0));
+    static Right : NeighborDirection = new NeighborDirection("Right", new Vector2(1, 0));
     static ForEach(callback : NeighborDirectionEachCallback)
     {
 		callback(this.Up);
