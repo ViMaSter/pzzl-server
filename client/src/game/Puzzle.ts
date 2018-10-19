@@ -50,7 +50,36 @@ export class Puzzle
 
 		this.GenerateGrid();
 
+		this.DrawImage(<HTMLImageElement>document.querySelector("img"));
+
 		this.listener.attach(this.CursorPositionUpdate.bind(this));
+	}
+
+	private DrawImage(imageElement : HTMLImageElement)
+	{
+		for (let x : number = 0; x < this.pieces.maxSize.x; x++)
+		{
+			for (let y : number = 0; y < this.pieces.maxSize.y; y++)
+			{
+				const position = new Vector2(x, y);
+				const item = this.pieces.item(position);
+				if (item == null)
+				{
+					break;
+				}
+				const context : CanvasRenderingContext2D = <CanvasRenderingContext2D>item.element.getContext("2d");
+				context.globalAlpha = 0.4;
+				context.drawImage(
+					imageElement,
+					imageElement.naturalWidth / this.pieces.maxSize.x * x,
+					imageElement.naturalHeight / this.pieces.maxSize.y * y,
+					imageElement.naturalWidth / this.pieces.maxSize.x,
+					imageElement.naturalHeight / this.pieces.maxSize.y,
+					0, 0,
+					item.size.x, item.size.y
+				);
+			}
+		}
 	}
 
 	private GenerateGrid()

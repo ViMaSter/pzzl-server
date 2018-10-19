@@ -1,5 +1,5 @@
 pushd server 
-start watch.bat
+start run.bat
 popd
 pushd client 
 start watch.bat
