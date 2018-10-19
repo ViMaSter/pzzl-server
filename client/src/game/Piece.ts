@@ -1,85 +1,56 @@
 import {Vector2 as Vector2} from "util/Vector2"
 
-export type MouseListenerCallback = (lastPosition : Vector2, newPosition : Vector2, deltaPosition : Vector2) => void;
-export class MouseListener
-{
-	lastPosition : Vector2 = new Vector2(-1, -1);
-	updateListener : MouseListenerCallback[] = [];
-	constructor()
-	{
-		window.addEventListener("mousemove", this.updateMousePosition.bind(this));
-		window.addEventListener("mousedown", this.updateMousePosition.bind(this));
-		window.addEventListener("touchmove", this.updateTouchPosition.bind(this), {capture: true, passive: false});
-		window.addEventListener("touchstart", this.updateTouchPosition.bind(this), {capture: true, passive: false});
-	}
-	private UpdatePosition(newPosition : Vector2)
-	{
-		const deltaPosition = Vector2.delta(newPosition, this.lastPosition);
-		this.Update(this.lastPosition, newPosition, deltaPosition)
-		this.lastPosition = newPosition;
-	}
-	private updateMousePosition(event : MouseEvent)
-	{
-		const newPosition : Vector2 = new Vector2 (event.clientX, event.clientY);
-		this.UpdatePosition(newPosition);
-		event.preventDefault();
-	}
-	private updateTouchPosition(event : TouchEvent)
-	{
-		event.preventDefault();
-		if (event.touches.item(0) == null)
-		{
-			return;
-		}
-		const firstTouch : Touch = event.touches.item(0) as Touch;
-		const newPosition : Vector2 = new Vector2(firstTouch.screenX, firstTouch.screenY);
-		this.UpdatePosition(newPosition);
-	}
-
-	attach(newListener : MouseListenerCallback)
-	{
-		const listenerIndex = this.updateListener.indexOf(newListener);
-		if (listenerIndex != -1)
-		{
-			console.error("Attempting to attach an lister that's already attached");
-			return;
-		}
-		this.updateListener.push(newListener);
-	}
-
-	deattach(newListener : MouseListenerCallback)
-	{
-		const listenerIndex = this.updateListener.indexOf(newListener);
-		if (listenerIndex == -1)
-		{
-			console.warn("Attempting to remove a listener that wasn't queued");
-		}
-		this.updateListener.splice(listenerIndex, 1);
-	}
-
-	private Update(lastPosition : Vector2, newPosition : Vector2, deltaPosition : Vector2)
-	{
-		this.updateListener.forEach((listener : MouseListenerCallback) =>
-		{
-			listener(this.lastPosition, newPosition, deltaPosition);
-		})
-	}
-}
-
 export type ToggleItemCallback = (piece : Piece) => void;
+
+export type NeighborDirectionEachCallback = (direction : NeighborDirection) => void;
+export class NeighborDirection {
+	Name : string = "";
+	Position : Vector2 = new Vector2(-1, -1);
+	private constructor(Name : string, Position : Vector2)
+	{
+		this.Name = Name;		
+		this.Position = Position;
+	}
+    static Up : NeighborDirection = new NeighborDirection("Up", new Vector2(0, 1));
+    static Down : NeighborDirection = new NeighborDirection("Down", new Vector2(0, -1));
+    static Left : NeighborDirection = new NeighborDirection("Left", new Vector2(1, 0));
+    static Right : NeighborDirection = new NeighborDirection("Right", new Vector2(-1, 0));
+    static ForEach(callback : NeighborDirectionEachCallback)
+    {
+		callback(this.Up);
+		callback(this.Down);
+		callback(this.Left);
+		callback(this.Right);
+    }
+    static Opposite(direction : NeighborDirection) : NeighborDirection
+    {
+		if (direction.Name == "Up") 	return NeighborDirection.Down;
+		if (direction.Name == "Down") 	return NeighborDirection.Up;
+		if (direction.Name == "Left") 	return NeighborDirection.Right;
+		if (direction.Name == "Right") 	return NeighborDirection.Left;
+
+		console.error("Invalid direction supplied");
+		return new NeighborDirection("", new Vector2(-1, -1));
+    }
+};
+
 export class Piece
 {
 	element : HTMLCanvasElement;
 	position : Vector2 = new Vector2(-1, -1);
-	constructor(position : Vector2, onSelect : ToggleItemCallback, onDeselect : ToggleItemCallback)
+	size : Vector2 = new Vector2(-1, -1);
+	private neighbors : Map<String, Piece> = new Map<String, Piece>();
+
+	constructor(position : Vector2, size : Vector2, onSelect : ToggleItemCallback, onDeselect : ToggleItemCallback)
 	{
 		this.position = position;
+		this.size = size;
 		this.element = document.createElement("canvas");
 		this.element.classList.add("piece");	
 		this.element.dataset.x = position.x + "";
 		this.element.dataset.y = position.y + "";
-		this.element.width = 50;
-		this.element.height = 50;
+		this.element.width = size.x;
+		this.element.height = size.y;
 
 		this.element.addEventListener(	"touchstart",	()=>{onSelect(this)});
 		this.element.addEventListener(	"mousedown",	()=>{onSelect(this)});
@@ -88,17 +59,57 @@ export class Piece
 
 		this.setupDebugText();
 	}
+
+	getNeighbor(direction : NeighborDirection) : Piece | undefined
+	{
+		return this.neighbors.get(direction.Name);
+	}
+
+	setNeighbor(direction : NeighborDirection, newNeighbor : Piece) : boolean
+	{
+		if (this.neighbors.get(direction.Name) != undefined)
+		{
+			console.error(`Piece [${this.position.x}, ${this.position.y}] already has a neighbor in direction '${direction}'`);
+			return false;
+		}
+		this.neighbors.set(direction.Name, newNeighbor);
+		console.log(`Piece [${newNeighbor.position.x}, ${newNeighbor.position.y}] is now the ${direction.Name}-neighbor of [${this.position.x}, ${this.position.y}]`);
+
+
+		const opposite : NeighborDirection = NeighborDirection.Opposite(direction);
+		
+		if (newNeighbor.neighbors.get(opposite.Name) != undefined)
+		{
+			console.error(`Piece [${newNeighbor.position.x}, ${newNeighbor.position.y}] already has a neighbor in direction '${opposite}'`);
+			return false;
+		}
+		newNeighbor.neighbors.set(opposite.Name, this);
+		console.log(`Piece [${this.position.x}, ${this.position.y}] is now the ${opposite.Name}-neighbor of [${newNeighbor.position.x}, ${newNeighbor.position.y}]`);
+
+		return true;
+	}
+
 	setupDebugText()
 	{
 		const context : CanvasRenderingContext2D = <CanvasRenderingContext2D>this.element.getContext("2d");
 		context.font = "20px Arial";
 		context.fillText(`[${this.position.x}, ${this.position.y}]`, 0, 40);
 	}
+
+	getPosition() : Vector2
+	{
+		return Vector2.fromString(this.element.style.left || "0", this.element.style.top || "0");
+	}
+
 	moveBy(delta : Vector2)
 	{
-		const oldPosition = Vector2.fromString(this.element.style.left || "0", this.element.style.top || "0");
-		this.element.style.left = (oldPosition.x + delta.x) + "px";
-		this.element.style.top = (oldPosition.y + delta.y) + "px";
+		this.moveTo(Vector2.add(this.getPosition(), delta));
+	}
+
+	moveTo(position : Vector2)
+	{
+		this.element.style.left = position.x + "px";
+		this.element.style.top  = position.y + "px";
 	}
 }
 
@@ -106,16 +117,18 @@ export class PieceGrid
 {
 	data : Piece[][] = [];
 	maxSize : Vector2;
-	constructor(dimensions : Vector2, onSelect : ToggleItemCallback, onDeselect : ToggleItemCallback)
+	pieceSize : Vector2;
+	constructor(dimensions : Vector2, pieceSize : Vector2, onSelect : ToggleItemCallback, onDeselect : ToggleItemCallback)
 	{
 		this.maxSize = dimensions;
+		this.pieceSize = pieceSize;
 		for (let x : number = 0; x < this.maxSize.x; x++)
 		{
 			this.data[x] = [];
 			for (let y : number = 0; y < this.maxSize.y; y++)
 			{
 				const position = new Vector2(x, y);
-				this.data[x][y] = new Piece(position, onSelect, onDeselect);
+				this.data[x][y] = new Piece(position, pieceSize, onSelect, onDeselect);
 			}
 		}
 	}
