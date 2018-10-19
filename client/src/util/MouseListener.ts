@@ -3,8 +3,8 @@ import {Vector2 as Vector2} from "util/Vector2"
 export type MouseListenerCallback = (lastPosition : Vector2, newPosition : Vector2, deltaPosition : Vector2) => void;
 export class MouseListener
 {
-	lastPosition : Vector2 = new Vector2(-1, -1);
-	updateListener : MouseListenerCallback[] = [];
+	private lastPosition : Vector2 = new Vector2(-1, -1);
+	private updateListener : MouseListenerCallback[] = [];
 	constructor()
 	{
 		window.addEventListener("mousemove", this.updateMousePosition.bind(this));
@@ -47,7 +47,7 @@ export class MouseListener
 		this.updateListener.push(newListener);
 	}
 
-	deattach(newListener : MouseListenerCallback)
+	detach(newListener : MouseListenerCallback)
 	{
 		const listenerIndex = this.updateListener.indexOf(newListener);
 		if (listenerIndex == -1)

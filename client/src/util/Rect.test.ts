@@ -1,5 +1,6 @@
 import {Rect as Rect} from "util/Rect"
 
+// Mock this class for Jest
 class DOMRect {
 	x : number = 0;
 	y : number = 0;
@@ -30,21 +31,26 @@ class DOMRect {
 		bottom: this.bottom,
 		x: this.x,
 		y: this.y
-    } };
+	}};
 }
 
+// Create sample data
 const mainRect : DOMRect = new DOMRect(50, 50, 50, 50);
 const overlappingRect : DOMRect = new DOMRect(75, 75, 50, 50);
 const notOverlappingRect : DOMRect = new DOMRect(110, 100, 50, 50);
 
-test('Rect.Overlaps', () => {
-	expect(Rect.Overlaps(mainRect, overlappingRect)).toBe(true);
-	expect(Rect.Overlaps(mainRect, notOverlappingRect)).toBe(false);
-});
+describe('Rect', () => {
 
-test('Rect.OverlapsWithBuffer', () => {
-	expect(Rect.OverlapsWithBuffer(mainRect, notOverlappingRect, 10)).toBe(false);
-	expect(Rect.OverlapsWithBuffer(mainRect, notOverlappingRect, 11)).toBe(true);
-	expect(Rect.OverlapsWithBuffer(mainRect, overlappingRect, 0)).toBe(true);
-	expect(Rect.OverlapsWithBuffer(mainRect, overlappingRect, 10)).toBe(true);
+	test('Overlaps', () => {
+		expect(Rect.Overlaps(mainRect, overlappingRect)).toBe(true);
+		expect(Rect.Overlaps(mainRect, notOverlappingRect)).toBe(false);
+	});
+
+	test('OverlapsWithBuffer', () => {
+		expect(Rect.OverlapsWithBuffer(mainRect, notOverlappingRect, 10)).toBe(false);
+		expect(Rect.OverlapsWithBuffer(mainRect, notOverlappingRect, 11)).toBe(true);
+		expect(Rect.OverlapsWithBuffer(mainRect, overlappingRect, 0)).toBe(true);
+		expect(Rect.OverlapsWithBuffer(mainRect, overlappingRect, 10)).toBe(true);
+	});
+
 });
