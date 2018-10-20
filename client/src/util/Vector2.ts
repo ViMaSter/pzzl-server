@@ -9,7 +9,7 @@ export class Vector2
 	}
 	static fromString(x : string, y : string) : Vector2
 	{
-		return new Vector2(parseInt(x), parseInt(y));
+		return new Vector2(parseFloat(x), parseFloat(y));
 	}
 	static add(posA : Vector2, posB : Vector2) : Vector2
 	{
