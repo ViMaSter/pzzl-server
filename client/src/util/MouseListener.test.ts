@@ -7,78 +7,85 @@ let reportedValues : any = {
 	newPosition: new Vector2(),
 	deltaPosition: new Vector2()
 };
-let positionCallback : any = jest.fn((lastPosition : Vector2, newPosition : Vector2, deltaPosition : Vector2) => {
-	reportedValues.lastPosition = lastPosition;
-	reportedValues.newPosition = newPosition;
-	reportedValues.deltaPosition = deltaPosition;
-});
-let secondCallback : any = jest.fn((lastPosition : Vector2, newPosition : Vector2, deltaPosition : Vector2) => {});
+let callbackA : any;
+let callbackB : any;
 
 let listener : MouseListener;
 describe('MouseListener', () => {
 
-	beforeAll(() => {
+	beforeEach(() => {
  		listener = new MouseListener();
+
+ 		callbackA = jest.fn((lastPosition : Vector2, newPosition : Vector2, deltaPosition : Vector2) => {});
+ 		callbackB = jest.fn((lastPosition : Vector2, newPosition : Vector2, deltaPosition : Vector2) => {});
 	});
 
 	test('initialAttach', () => {
-		listener.attach(positionCallback);
+		listener.attach(callbackA);
 		expect(((listener as any).updateListener).length).toBe(1);
 	});
 
 	test('detach', () => {
+		listener.attach(callbackA);
+		expect(((listener as any).updateListener).length).toBe(1);
+		listener.detach(callbackA);
+		expect(((listener as any).updateListener).length).toBe(0);
 	});
 
 	test('mousemoveWithAttach', () => {
+		listener.attach(callbackA);
+
 		document.dispatchEvent(new MouseEvent("mousemove", {clientX: 20, clientY: 20, bubbles: true}));
-		expect(positionCallback.mock.calls.length).toBe(1);
-		expect(reportedValues.lastPosition).toMatchObject({x: -1, y: -1});
-		expect(reportedValues.newPosition).toMatchObject({x: 20, y: 20});
-		expect(reportedValues.deltaPosition).toMatchObject({x: 21, y: 21});
+		expect(callbackA.mock.calls.length).toBe(1);
+		expect(callbackA.mock.calls[0]).toMatchObject([
+			{x: -1, y: -1},	// lastPosition
+			{x: 20, y: 20},	// newPosition
+			{x: 21, y: 21}	// deltaPosition
+		]);
 		
 		document.dispatchEvent(new MouseEvent("mousedown", {clientX: 21, clientY: 20, bubbles: true}));
-		expect(positionCallback.mock.calls.length).toBe(2);
-		expect(reportedValues.lastPosition).toMatchObject({x: 20, y: 20});
-		expect(reportedValues.newPosition).toMatchObject({x: 21, y: 20});
-		expect(reportedValues.deltaPosition).toMatchObject({x: 1, y: 0});
+		expect(callbackA.mock.calls.length).toBe(2);
+		expect(callbackA.mock.calls[1]).toMatchObject([
+			{x: 20, y: 20},	// lastPosition
+			{x: 21, y: 20},	// newPosition
+			{x:  1, y:  0}	// deltaPosition
+		]);
 	});
 
 	test('secondAttach', () => {
-		listener.attach(secondCallback);
-		expect(((listener as any).updateListener).length).toBe(2);
-	});
-
-	test('mousemoveWithSecondAttach', () => {
+		// Attach callback A
+		listener.attach(callbackA);
 		document.dispatchEvent(new MouseEvent("mousemove", {clientX: 20, clientY: 20, bubbles: true}));
-		expect(positionCallback.mock.calls.length).toBe(3);
-		expect(secondCallback.mock.calls.length).toBe(1);
-		expect(reportedValues.lastPosition).toMatchObject({x: 21, y: 20});
-		expect(reportedValues.newPosition).toMatchObject({x: 20, y: 20});
-		expect(reportedValues.deltaPosition).toMatchObject({x: -1, y: 0});
+		expect(callbackA.mock.calls.length).toBe(1);
+
+		// Attach callback B
+		listener.attach(callbackB);
+		expect(((listener as any).updateListener).length).toBe(2);
 		
+		// Run event
 		document.dispatchEvent(new MouseEvent("mousedown", {clientX: 21, clientY: 20, bubbles: true}));
-		expect(positionCallback.mock.calls.length).toBe(4);
-		expect(secondCallback.mock.calls.length).toBe(2);
-		expect(reportedValues.lastPosition).toMatchObject({x: 20, y: 20});
-		expect(reportedValues.newPosition).toMatchObject({x: 21, y: 20});
-		expect(reportedValues.deltaPosition).toMatchObject({x: 1, y: 0});
+		expect(callbackA.mock.calls.length).toBe(2);
+		expect(callbackB.mock.calls.length).toBe(1);
+		// Ensure both received the same values
+		expect(callbackB.mock.calls[0]).toMatchObject(callbackA.mock.calls[1]);
+
+		// Detach callback B
+		listener.detach(callbackB);
+		expect(((listener as any).updateListener).length).toBe(1);
+		document.dispatchEvent(new MouseEvent("mousedown", {clientX: 20, clientY: 20, bubbles: true}));
+		expect(callbackA.mock.calls.length).toBe(3);
+		// Ensure callback B was never called
+		expect(callbackB.mock.calls.length).toBe(1);
+		// Ensure B's last values mismatch the new values on A
+		expect(callbackB.mock.calls[0]).not.toMatchObject(callbackA.mock.calls[2]);
 	});
 
-	test('detach', () => {
-		listener.detach(secondCallback);
-		document.dispatchEvent(new MouseEvent("mousedown", {clientX: 21, clientY: 20, bubbles: true}));
-		expect(secondCallback.mock.calls.length).toBe(2);
+
+	test("Once this test fails, TypeScript is able to properly mock Touch-events and have to replace this test with something like 'mousemoveWithAttach' for touch-events.", () => {
+		const t = () => {
+			const touchList : TouchList = new TouchList();
+		};
+		expect(t).toThrow(ReferenceError);
 	});
 
 });
-
-
-
-// callback attaching
-// callback detaching
-// mouse position update value change
-// touch position update value change
-// mouse position update single callback
-// touch position update single callback
-// mouse position update multiple callback
-// touch position update multiple callback
