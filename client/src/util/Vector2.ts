@@ -23,15 +23,15 @@ export class Vector2
 		if (typeof factor == "number")
 		{
 			return new Vector2(
-				posA.x * <number>factor,
-				posA.y * <number>factor
+				posA.x * (factor as number),
+				posA.y * (factor as number)
 			);
 		}
 		if (factor instanceof Vector2)
 		{
 			return new Vector2(
-				posA.x * (<Vector2>factor).x,
-				posA.y * (<Vector2>factor).y
+				posA.x * (factor as Vector2).x,
+				posA.y * (factor as Vector2).y
 			);
 		}
 		console.error("Vector2.multiply used with not supported factor-argument");

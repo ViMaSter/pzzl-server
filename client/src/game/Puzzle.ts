@@ -40,8 +40,8 @@ export class Puzzle
 
 	constructor(rootElement : HTMLElement, dimensions : Vector2)
 	{
-		this.rootElement = <HTMLElement>rootElement;
-		this.playingField = <HTMLElement>this.rootElement.querySelector("#playingfield");
+		this.rootElement = rootElement;
+		this.playingField = this.rootElement.querySelector("#playingfield") as HTMLElement;
 
 		this.snapThresholdInPx = 10;
 
@@ -50,7 +50,7 @@ export class Puzzle
 
 		this.GenerateGrid();
 
-		this.DrawImage(<HTMLImageElement>document.querySelector("img"));
+		this.DrawImage(document.querySelector("img") as HTMLImageElement);
 
 		this.ShufflePieces();
 
@@ -317,7 +317,7 @@ export class Puzzle
 		// While we have pieces to process...
 		while(itemsToProcess.length > 0)
 		{
-			const nextConnection : PuzzlePieceConnection = <PuzzlePieceConnection>itemsToProcess.shift();
+			const nextConnection : PuzzlePieceConnection = itemsToProcess.shift() as PuzzlePieceConnection;
 			// ...mark the affected piece as processed
 			itemsProcessed.push(nextConnection.getAffectedPiece());
 

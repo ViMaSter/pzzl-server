@@ -103,7 +103,7 @@ export class Piece
 	}
 	getNeighbor(direction : NeighborDirection) : Piece
 	{
-		return <Piece>this.neighbors.get(direction.Name);
+		return this.neighbors.get(direction.Name) as Piece;
 	}
 
 	private intersections : Map<string, IntersectionDescription> = new Map<string, IntersectionDescription>();
@@ -247,7 +247,7 @@ export class PieceGrid
 						return;
 					}
 					// ...otherwise create counter for the intersection of the preceding piece
-					this.data[x][y].setIntersection(direction, (<Piece>precedingNeighbor).getCounterForIntersection(NeighborDirection.Opposite(direction)));
+					this.data[x][y].setIntersection(direction, (precedingNeighbor as Piece).getCounterForIntersection(NeighborDirection.Opposite(direction)));
 				});
 			}
 		}
