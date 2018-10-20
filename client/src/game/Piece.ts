@@ -2,19 +2,23 @@ import {Vector2 as Vector2} from "util/Vector2"
 
 export type ToggleItemCallback = (piece : Piece) => void;
 
-export type NeighborDirectionEachCallback = (direction : NeighborDirection) => void;
+type NeighborDirectionEachCallback = (direction : NeighborDirection) => void;
 export class NeighborDirection {
-	Name : string = "";
-	Position : Vector2 = new Vector2(-1, -1);
-	private constructor(Name : string, Position : Vector2)
+	private name : string = "";
+	private position : Vector2 = new Vector2(-1, -1);
+	private constructor(name : string, position : Vector2)
 	{
-		this.Name = Name;		
-		this.Position = Position;
+		this.name = name;		
+		this.position = position;
 	}
-    static Up : NeighborDirection = new NeighborDirection("Up", new Vector2(0, -1));
-    static Down : NeighborDirection = new NeighborDirection("Down", new Vector2(0, 1));
-    static Left : NeighborDirection = new NeighborDirection("Left", new Vector2(-1, 0));
-    static Right : NeighborDirection = new NeighborDirection("Right", new Vector2(1, 0));
+
+	get Name() : string { return this.name; }
+	get Position() : Vector2 { return this.position; }
+
+    static get Up() : NeighborDirection { return new NeighborDirection("Up", new Vector2(0, -1))};
+    static get Down() : NeighborDirection { return new NeighborDirection("Down", new Vector2(0, 1))};
+    static get Left() : NeighborDirection { return new NeighborDirection("Left", new Vector2(-1, 0))};
+    static get Right() : NeighborDirection { return new NeighborDirection("Right", new Vector2(1, 0))};
     static ForEach(callback : NeighborDirectionEachCallback)
     {
 		callback(this.Up);
@@ -43,14 +47,20 @@ export const enum Shape
 
 export class IntersectionDescription
 {
-	outwards : boolean;
-	shape : Shape;
-	outwardishSideCurvature : number;
-	size : Vector2;
-	offset : Vector2
-	private constructor(outwards : boolean, shape : Shape, outwardishSideCurvature : number, size : Vector2, offset : Vector2)
+	private isOutwards : boolean;
+	get IsOutwards() : boolean { return this.isOutwards; }
+	private shape : Shape;
+	get Shape() : Shape { return this.shape; }
+	private outwardishSideCurvature : number;
+	get OutwardishSideCurvature() : number { return this.outwardishSideCurvature; }
+	private size : Vector2;
+	get Size() : Vector2 { return this.size; }
+	private offset : Vector2
+	get Offset() : Vector2 { return this.offset; }
+	
+	private constructor(isOutwards : boolean, shape : Shape, outwardishSideCurvature : number, size : Vector2, offset : Vector2)
 	{
-		this.outwards = outwards;
+		this.isOutwards = isOutwards;
 		this.shape = shape;
 		this.outwardishSideCurvature = outwardishSideCurvature;
 		this.size = size;
@@ -62,25 +72,21 @@ export class IntersectionDescription
 		return this.CreateNew(true, Shape.NONE, 0, new Vector2(1, 1), new Vector2(0, 1));
 	}
 
-	static CreateNew(outwards : boolean, shape : Shape, outwardishSideCurvature : number, size : Vector2|null, offset : Vector2|null)
+	static CreateNew(isOutwards : boolean, shape : Shape, outwardishSideCurvature : number, size : Vector2|null, offset : Vector2|null)
 	{
 		const finalSize : Vector2 = size == null ? new Vector2(1, 1) : size;
 		const finalOffset : Vector2 = offset == null ? new Vector2(1, 1) : offset;
-		return new IntersectionDescription(outwards, shape, outwardishSideCurvature, finalSize, finalOffset);
+		return new IntersectionDescription(isOutwards, shape, outwardishSideCurvature, finalSize, finalOffset);
 	}
 
-	static CreateCounter(sourceDirection : NeighborDirection, sourceIntersection : IntersectionDescription)
+	static CreateCounter(sourceIntersection : IntersectionDescription)
 	{
-		const offsetModifier = new Vector2(
-			sourceDirection == NeighborDirection.Up || sourceDirection == NeighborDirection.Down ? -1 : 1,
-			sourceDirection == NeighborDirection.Left || sourceDirection == NeighborDirection.Right ? -1 : 1
-		);
 		return this.CreateNew(
-			!sourceIntersection.outwards,
+			!sourceIntersection.isOutwards,
 			sourceIntersection.shape,
 			-sourceIntersection.outwardishSideCurvature,
 			sourceIntersection.size,
-			Vector2.multiply(sourceIntersection.offset, offsetModifier)
+			Vector2.multiply(sourceIntersection.offset, new Vector2(-1, -1))
 		);
 	}
 }
@@ -112,7 +118,7 @@ export class Piece
 
 	getCounterForIntersection(direction : NeighborDirection) : IntersectionDescription
 	{
-		return IntersectionDescription.CreateCounter(direction, this.getIntersection(direction));
+		return IntersectionDescription.CreateCounter(this.getIntersection(direction));
 	}
 	setIntersection(direction : NeighborDirection, intersectionDescription : IntersectionDescription)
 	{

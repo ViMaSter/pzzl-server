@@ -16,5 +16,6 @@ module.exports = {
   ],
   "moduleNameMapper": {
     '^util/(.*)$': '<rootDir>/src/util/$1',
+    '^game/(.*)$': '<rootDir>/src/game/$1'
   }
 }
