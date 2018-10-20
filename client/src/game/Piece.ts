@@ -151,19 +151,19 @@ export class Piece
 	{
 		if (index.x < 0)
 		{
-			throw new RangeError("Index X has to be 0 or bigger!");
+			throw new RangeError("Index X has to be 0 or bigger");
 		}
 		if (index.y < 0)
 		{
-			throw new RangeError("Index Y has to be 0 or bigger!");
+			throw new RangeError("Index Y has to be 0 or bigger");
 		}
 		if (size.x <= 0)
 		{
-			throw new RangeError("Size X has to be bigger than 0!");
+			throw new RangeError("Size X has to be bigger than 0");
 		}
 		if (size.y <= 0)
 		{
-			throw new RangeError("Size Y has to be bigger than 0!");
+			throw new RangeError("Size Y has to be bigger than 0");
 		}
 
 		let newPiece : Piece = new Piece();
@@ -249,6 +249,23 @@ export class PieceGrid
 	
 	constructor(dimensions : Vector2, pieceSize : Vector2, onSelect : ToggleItemCallback, onDeselect : ToggleItemCallback)
 	{
+		if (dimensions.x < 0)
+		{
+			throw new RangeError("Dimensions X has to be bigger than 0");
+		}
+		if (dimensions.y < 0)
+		{
+			throw new RangeError("Dimensions Y has to be bigger than 0");
+		}
+		if (pieceSize.x < 0)
+		{
+			throw new RangeError("PieceSize X has to be bigger than 0");
+		}
+		if (pieceSize.y < 0)
+		{
+			throw new RangeError("PieceSize Y has to be bigger than 0");
+		}
+
 		this.dimensions = dimensions;
 		this.pieceSize = pieceSize;
 		for (let x : number = 0; x < this.dimensions.x; x++)
@@ -317,14 +334,5 @@ export class PieceGrid
 	item(index : Vector2) : Piece
 	{
 		return this.data[index.x][index.y] as Piece;
-	}
-
-	itemFromElement(element : HTMLElement)
-	{
-		if (typeof element.dataset.x == "undefined" || typeof element.dataset.y == "undefined")
-		{
-			console.error("Cannot look up element %o in grid, as it's not a valid piece!", element);
-		}
-		return this.item(Vector2.fromString(element.dataset.x as string, element.dataset.y as string));
 	}
 }

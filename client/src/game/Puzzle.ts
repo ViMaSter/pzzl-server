@@ -29,14 +29,14 @@ class PuzzlePieceConnection
 export class Puzzle
 {
 	// Main
-	rootElement : HTMLElement;
-	playingField : HTMLElement;
-	pieces : PuzzlePiece.PieceGrid;
-	activePiece : PuzzlePiece.Piece | null = null;
+	private rootElement : HTMLElement;
+	private playingField : HTMLElement;
+	private pieces : PuzzlePiece.PieceGrid;
+	private activePiece : PuzzlePiece.Piece | null = null;
 
-	listener : MouseListener;
+	private listener : MouseListener;
 
-	snapThresholdInPx : number;
+	private snapThresholdInPx : number;
 
 	constructor(rootElement : HTMLElement, dimensions : Vector2)
 	{

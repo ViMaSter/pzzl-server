@@ -29,13 +29,13 @@ describe('Piece', () => {
 		let construction = () => {
 			const piece : Piece = ((Piece as any) as InternalPiece).Create(index, size, ()=>{}, ()=>{}) as any as Piece;
 		};
-		expect(construction).toThrowWithMessage(RangeError, "Index X has to be 0 or bigger!");
+		expect(construction).toThrowWithMessage(RangeError, "Index X has to be 0 or bigger");
 
 		index = new Vector2(0, -1);
 		construction = () => {
 			const piece : Piece = ((Piece as any) as InternalPiece).Create(index, size, ()=>{}, ()=>{}) as any as Piece;
 		};
-		expect(construction).toThrowWithMessage(RangeError, "Index Y has to be 0 or bigger!");
+		expect(construction).toThrowWithMessage(RangeError, "Index Y has to be 0 or bigger");
 		index = new Vector2(0, 0);
 	});
 
@@ -47,13 +47,13 @@ describe('Piece', () => {
 		let construction = () => {
 			const piece : Piece = ((Piece as any) as InternalPiece).Create(index, size, ()=>{}, ()=>{}) as any as Piece;
 		};
-		expect(construction).toThrowWithMessage(RangeError, "Size X has to be bigger than 0!");
+		expect(construction).toThrowWithMessage(RangeError, "Size X has to be bigger than 0");
 
 		size = new Vector2(1, -1);
 		construction = () => {
 			const piece : Piece = ((Piece as any) as InternalPiece).Create(index, size, ()=>{}, ()=>{}) as any as Piece;
 		};
-		expect(construction).toThrowWithMessage(RangeError, "Size Y has to be bigger than 0!");
+		expect(construction).toThrowWithMessage(RangeError, "Size Y has to be bigger than 0");
 	});
 	
 	test('CreateCounterCallbacks', () => {
@@ -241,9 +241,5 @@ describe('Piece', () => {
 		});
 		spyOnConsoleError.mockRestore();
 	});
-
-
-
-		
 
 });
