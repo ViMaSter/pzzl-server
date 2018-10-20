@@ -94,17 +94,17 @@ export class IntersectionDescription
 interface InternalPiece
 {
 	Create: (position : Vector2, size : Vector2, onSelect : ToggleItemCallback, onDeselect : ToggleItemCallback) => InternalPiece;
-	setIntersection: (direction : NeighborDirection, intersectionDescription : IntersectionDescription) => void;
+	setIntersection: (direction : NeighborDirection, intersectionDescription : IntersectionDescription) => boolean;
 	getCounterForIntersection: (direction : NeighborDirection) => IntersectionDescription;
 }
 
 export class Piece
 {
 	private element : HTMLCanvasElement;
-	private position : Vector2 = new Vector2(-1, -1);
+	private index : Vector2 = new Vector2(-1, -1);
 	private size : Vector2 = new Vector2(-1, -1);
 	get Element() : HTMLCanvasElement { return this.element; }
-	get Position() : Vector2 { return this.position; }
+	get Index() : Vector2 { return this.index; }
 	get Size() : Vector2 { return this.size; }
 
 	private neighbors : Map<string, Piece> = new Map<string, Piece>();
@@ -131,14 +131,15 @@ export class Piece
 	{
 		return IntersectionDescription.CreateCounter(this.getIntersection(direction));
 	}
-	protected setIntersection(direction : NeighborDirection, intersectionDescription : IntersectionDescription)
+	protected setIntersection(direction : NeighborDirection, intersectionDescription : IntersectionDescription) : boolean
 	{
 		if (this.hasIntersection(direction))
 		{
-			console.error(`[${this.position.x}, ${this.position.y}] already has a definition for it's ${direction}-intersection`);
-			return;
+			console.error(`[${this.index.x}, ${this.index.y}] already has a definition for it's ${direction}-intersection`);
+			return false;
 		}
 		this.intersections.set(direction.Name, intersectionDescription);
+		return true;
 	}
 
 	// Limit creation to this file; constructor cannot be defined in an interface, hence we forward the need through Create()
@@ -146,15 +147,15 @@ export class Piece
 	{
 		this.element = document.createElement("canvas");
 	}
-	protected static Create(position : Vector2, size : Vector2, onSelect : ToggleItemCallback, onDeselect : ToggleItemCallback) : Piece
+	protected static Create(index : Vector2, size : Vector2, onSelect : ToggleItemCallback, onDeselect : ToggleItemCallback) : Piece
 	{
-		if (position.x < 0)
+		if (index.x < 0)
 		{
-			throw new RangeError("Position X has to be 0 or bigger!");
+			throw new RangeError("Index X has to be 0 or bigger!");
 		}
-		if (position.y < 0)
+		if (index.y < 0)
 		{
-			throw new RangeError("Position Y has to be 0 or bigger!");
+			throw new RangeError("Index Y has to be 0 or bigger!");
 		}
 		if (size.x <= 0)
 		{
@@ -166,11 +167,11 @@ export class Piece
 		}
 
 		let newPiece : Piece = new Piece();
-		newPiece.position = position;
+		newPiece.index = index;
 		newPiece.size = size;
 		newPiece.Element.classList.add("piece");	
-		newPiece.Element.dataset.x = position.x + "";
-		newPiece.Element.dataset.y = position.y + "";
+		newPiece.Element.dataset.x = index.x + "";
+		newPiece.Element.dataset.y = index.y + "";
 		newPiece.Element.width = size.x;
 		newPiece.Element.height = size.y;
 
@@ -188,37 +189,35 @@ export class Piece
 		const context : CanvasRenderingContext2D = this.element.getContext("2d") as CanvasRenderingContext2D;
 		context.font = "20px Arial";
 		context.fillStyle = 'white';
-		context.fillText(`[${this.position.x}, ${this.position.y}]`, 0, 40);
+		context.fillText(`[${this.index.x}, ${this.index.y}]`, 0, 40);
 	}
 
 	setNeighbor(direction : NeighborDirection, newNeighbor : Piece) : boolean
 	{
 		// set neighbor on this piece
-		const expectedNeighborPosition = Vector2.add(this.position, direction.Position);
-		if (!Vector2.equal(expectedNeighborPosition, newNeighbor.position))
+		const expectedNeighborIndex = Vector2.add(this.index, direction.Position);
+		if (!Vector2.equal(expectedNeighborIndex, newNeighbor.index))
 		{
-			console.warn(`[${newNeighbor.position.x}, ${newNeighbor.position.y}] is not the ${direction.Name}-side neighbor of [${this.position.x}, ${this.position.y}] (expected [${expectedNeighborPosition.x}, ${expectedNeighborPosition.y}])`);
+			console.warn(`[${newNeighbor.index.x}, ${newNeighbor.index.y}] is not the ${direction.Name}-side neighbor of [${this.index.x}, ${this.index.y}] (expected [${expectedNeighborIndex.x}, ${expectedNeighborIndex.y}])`);
 			return false;
 		}
 
 		if (this.neighbors.get(direction.Name) != undefined)
 		{
-			console.error(`Piece [${this.position.x}, ${this.position.y}] already has a neighbor in direction '${direction.Name}'`);
+			console.error(`Piece [${this.index.x}, ${this.index.y}] already has a neighbor in direction '${direction.Name}'`);
 			return false;
 		}
 		this.neighbors.set(direction.Name, newNeighbor);
-		console.log(`Piece [${newNeighbor.position.x}, ${newNeighbor.position.y}] is now the ${direction.Name}-neighbor of [${this.position.x}, ${this.position.y}]`);
 
 		// set this piece as neighbor on the neighboring piece
 		const opposite : NeighborDirection = NeighborDirection.Opposite(direction);
 		
 		if (newNeighbor.neighbors.get(opposite.Name) != undefined)
 		{
-			console.error(`Piece [${newNeighbor.position.x}, ${newNeighbor.position.y}] already has a neighbor in direction '${opposite}'`);
+			console.error(`Piece [${newNeighbor.index.x}, ${newNeighbor.index.y}] already has a neighbor in direction '${opposite}'`);
 			return false;
 		}
 		newNeighbor.neighbors.set(opposite.Name, this);
-		console.log(`Piece [${this.position.x}, ${this.position.y}] is now the ${opposite.Name}-neighbor of [${newNeighbor.position.x}, ${newNeighbor.position.y}]`);
 
 		return true;
 	}
@@ -233,10 +232,10 @@ export class Piece
 		this.moveTo(Vector2.add(this.getPosition(), delta));
 	}
 
-	moveTo(position : Vector2)
+	moveTo(newPosition : Vector2)
 	{
-		this.element.style.left = position.x + "px";
-		this.element.style.top  = position.y + "px";
+		this.element.style.left = newPosition.x + "px";
+		this.element.style.top  = newPosition.y + "px";
 	}
 }
 
@@ -257,10 +256,10 @@ export class PieceGrid
 			this.data[x] = [];
 			for (let y : number = 0; y < this.dimensions.y; y++)
 			{
-				const position = new Vector2(x, y);
+				const index = new Vector2(x, y);
 
 				// Create new piece
-				this.data[x][y] = ((((Piece as any) as InternalPiece)).Create(position, pieceSize, onSelect, onDeselect) as any) as Piece;
+				this.data[x][y] = ((((Piece as any) as InternalPiece)).Create(index, pieceSize, onSelect, onDeselect) as any) as Piece;
 
 				// Create intersections...
 				NeighborDirection.ForEach((direction : NeighborDirection) =>
@@ -276,48 +275,48 @@ export class PieceGrid
 					}
 
 					// If we have don't have neighbors in a direction...
-					if (!this.hasItem(Vector2.add(position, direction.Position)))
+					if (!this.hasItem(Vector2.add(index, direction.Position)))
 					{
 						// ...create our own
 						((this.data[x][y] as any) as InternalPiece).setIntersection(direction, IntersectionDescription.CreateNew(true, Shape.Sphere, 0.4, new Vector2(1.5, 0.5), new Vector2(0.5, 0.5)));
 						return;
 					}
 					// ...otherwise create counter for the intersection of the preceding piece
-					const precedingNeighbor : Piece = this.item(Vector2.add(position, direction.Position));
+					const precedingNeighbor : Piece = this.item(Vector2.add(index, direction.Position));
 					((this.data[x][y] as any) as InternalPiece).setIntersection(direction, ((precedingNeighbor as any) as InternalPiece).getCounterForIntersection(NeighborDirection.Opposite(direction)));
 				});
 			}
 		}
 	}
 
-	hasItem(position : Vector2) : boolean
+	hasItem(index : Vector2) : boolean
 	{
-		if (position.x >= this.dimensions.x)
+		if (index.x >= this.dimensions.x)
 		{
 			return false;
 		}
-		if (position.y >= this.dimensions.y)
+		if (index.y >= this.dimensions.y)
 		{
 			return false;
 		}
-		if (position.x < 0)
+		if (index.x < 0)
 		{
 			return false;
 		}
-		if (position.y < 0)
+		if (index.y < 0)
 		{
 			return false;
 		}
-		if (typeof this.data[position.x] == "undefined" || typeof this.data[position.x][position.y] == "undefined")
+		if (typeof this.data[index.x] == "undefined" || typeof this.data[index.x][index.y] == "undefined")
 		{
 			return false;
 		}
 		return true;
 	}
 
-	item(position : Vector2) : Piece
+	item(index : Vector2) : Piece
 	{
-		return this.data[position.x][position.y] as Piece;
+		return this.data[index.x][index.y] as Piece;
 	}
 
 	itemFromElement(element : HTMLElement)

@@ -215,7 +215,7 @@ export class Puzzle
 		let bottomInBounds : 	boolean = droppedRect.bottom <		(collidingRect.bottom +	this.snapThresholdInPx) && droppedRect.bottom > 	(collidingRect.top -		this.snapThresholdInPx);
 		let topInBounds : 		boolean = droppedRect.top >			(collidingRect.top -	this.snapThresholdInPx) && droppedRect.top < 		(collidingRect.bottom + 	this.snapThresholdInPx);
 
-		console.log(`[${droppedPiece.Position.x}, ${droppedPiece.Position.y}] collides with [${collider.Position.x}, ${collider.Position.y}]`);
+		console.log(`[${droppedPiece.Index.x}, ${droppedPiece.Index.y}] collides with [${collider.Index.x}, ${collider.Index.y}]`);
 		console.log(`Overlap: left:${leftInBounds} right:${rightInBounds} top:${topInBounds} bottom:${bottomInBounds}`);
 		
 		if (leftInBounds && rightInBounds && !topInBounds && bottomInBounds)
@@ -245,7 +245,7 @@ export class Puzzle
 		{
 			for (let y : number = this.pieces.Dimensions.y - 1; y >= 0; y--)
 			{
-				if (x == piece.Position.x && y == piece.Position.y)
+				if (x == piece.Index.x && y == piece.Index.y)
 				{
 					continue;
 				}
@@ -266,12 +266,12 @@ export class Puzzle
 		
 		if (overlaps.length > 0)
 		{
-			overlaps = overlaps.filter((item) =>
+			overlaps = overlaps.filter((item : PuzzlePiece.Piece) =>
 			{
 				let notNeighbor = true;
 				PuzzlePiece.NeighborDirection.ForEach((direction : PuzzlePiece.NeighborDirection) =>
 				{
-					if (piece.hasNeighbor(direction) && piece.getNeighbor(direction).Position == item.Position)
+					if (piece.hasNeighbor(direction) && piece.getNeighbor(direction).Index == item.Index)
 					{
 						notNeighbor = false;
 						return false;
