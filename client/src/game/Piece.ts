@@ -91,11 +91,22 @@ export class IntersectionDescription
 	}
 }
 
+interface InternalPiece
+{
+	Create: (position : Vector2, size : Vector2, onSelect : ToggleItemCallback, onDeselect : ToggleItemCallback) => InternalPiece;
+	setIntersection: (direction : NeighborDirection, intersectionDescription : IntersectionDescription) => void;
+	getCounterForIntersection: (direction : NeighborDirection) => IntersectionDescription;
+}
+
 export class Piece
 {
-	element : HTMLCanvasElement;
-	position : Vector2 = new Vector2(-1, -1);
-	size : Vector2 = new Vector2(-1, -1);
+	private element : HTMLCanvasElement;
+	private position : Vector2 = new Vector2(-1, -1);
+	private size : Vector2 = new Vector2(-1, -1);
+	get Element() : HTMLCanvasElement { return this.element; }
+	get Position() : Vector2 { return this.position; }
+	get Size() : Vector2 { return this.size; }
+
 	private neighbors : Map<string, Piece> = new Map<string, Piece>();
 	hasNeighbor(direction : NeighborDirection) : boolean
 	{
@@ -116,11 +127,11 @@ export class Piece
 		return this.intersections.get(direction.Name) as IntersectionDescription;
 	}
 
-	getCounterForIntersection(direction : NeighborDirection) : IntersectionDescription
+	protected getCounterForIntersection(direction : NeighborDirection) : IntersectionDescription
 	{
 		return IntersectionDescription.CreateCounter(this.getIntersection(direction));
 	}
-	setIntersection(direction : NeighborDirection, intersectionDescription : IntersectionDescription)
+	protected setIntersection(direction : NeighborDirection, intersectionDescription : IntersectionDescription)
 	{
 		if (this.hasIntersection(direction))
 		{
@@ -130,23 +141,37 @@ export class Piece
 		this.intersections.set(direction.Name, intersectionDescription);
 	}
 
-	constructor(position : Vector2, size : Vector2, onSelect : ToggleItemCallback, onDeselect : ToggleItemCallback)
+	// Limit creation to this file; constructor cannot be defined in an interface, hence we forward the need through Create()
+	private constructor()
 	{
-		this.position = position;
-		this.size = size;
 		this.element = document.createElement("canvas");
-		this.element.classList.add("piece");	
-		this.element.dataset.x = position.x + "";
-		this.element.dataset.y = position.y + "";
-		this.element.width = size.x;
-		this.element.height = size.y;
+	}
+	protected static Create(position : Vector2, size : Vector2, onSelect : ToggleItemCallback, onDeselect : ToggleItemCallback) : Piece
+	{
+		let newPiece : Piece = new Piece();
+		newPiece.position = position;
+		newPiece.size = size;
+		newPiece.Element.classList.add("piece");	
+		newPiece.Element.dataset.x = position.x + "";
+		newPiece.Element.dataset.y = position.y + "";
+		newPiece.Element.width = size.x;
+		newPiece.Element.height = size.y;
 
-		this.element.addEventListener(	"touchstart",	()=>{onSelect(this)});
-		this.element.addEventListener(	"mousedown",	()=>{onSelect(this)});
-		window.addEventListener(		"touchend",		()=>{onDeselect(this)});
-		window.addEventListener(		"mouseup",		()=>{onDeselect(this)});
+		newPiece.Element.addEventListener(	"touchstart",	()=>{onSelect(newPiece)}	);
+		newPiece.Element.addEventListener(	"mousedown",	()=>{onSelect(newPiece)}	);
+		window.addEventListener(			"touchend",		()=>{onDeselect(newPiece)}	);
+		window.addEventListener(			"mouseup",		()=>{onDeselect(newPiece)}	);
 
-		this.setupDebugText();
+		newPiece.setupDebugText();
+		return newPiece;
+	}
+
+	private setupDebugText()
+	{
+		const context : CanvasRenderingContext2D = <CanvasRenderingContext2D>this.element.getContext("2d");
+		context.font = "20px Arial";
+		context.fillStyle = 'white';
+		context.fillText(`[${this.position.x}, ${this.position.y}]`, 0, 40);
 	}
 
 	setNeighbor(direction : NeighborDirection, newNeighbor : Piece) : boolean
@@ -181,14 +206,6 @@ export class Piece
 		return true;
 	}
 
-	setupDebugText()
-	{
-		const context : CanvasRenderingContext2D = <CanvasRenderingContext2D>this.element.getContext("2d");
-		context.font = "20px Arial";
-		context.fillStyle = 'white';
-		context.fillText(`[${this.position.x}, ${this.position.y}]`, 0, 40);
-	}
-
 	getPosition() : Vector2
 	{
 		return Vector2.fromString(this.element.style.left || "0", this.element.style.top || "0");
@@ -208,33 +225,36 @@ export class Piece
 
 export class PieceGrid
 {
-	data : Piece[][] = [];
-	maxSize : Vector2;
-	pieceSize : Vector2;
+	private data : Piece[][] = [];
+	private dimensions : Vector2;
+	get Dimensions() : Vector2 { return this.dimensions; }
+	private pieceSize : Vector2;
+	get PieceSize() : Vector2 { return this.pieceSize; }
+	
 	constructor(dimensions : Vector2, pieceSize : Vector2, onSelect : ToggleItemCallback, onDeselect : ToggleItemCallback)
 	{
-		this.maxSize = dimensions;
+		this.dimensions = dimensions;
 		this.pieceSize = pieceSize;
-		for (let x : number = 0; x < this.maxSize.x; x++)
+		for (let x : number = 0; x < this.dimensions.x; x++)
 		{
 			this.data[x] = [];
-			for (let y : number = 0; y < this.maxSize.y; y++)
+			for (let y : number = 0; y < this.dimensions.y; y++)
 			{
 				const position = new Vector2(x, y);
 
 				// Create new piece
-				this.data[x][y] = new Piece(position, pieceSize, onSelect, onDeselect);
+				this.data[x][y] = ((((Piece as any) as InternalPiece)).Create(position, pieceSize, onSelect, onDeselect) as any) as Piece;
 
 				// Create intersections...
 				NeighborDirection.ForEach((direction : NeighborDirection) =>
 				{
 					// ...that are solid for border pieces
-					if ((y == 0 && direction == NeighborDirection.Up) ||
-						(x == 0 && direction == NeighborDirection.Left) ||
-						(x == this.maxSize.x-1 && direction == NeighborDirection.Right) ||
-						(y == this.maxSize.y-1 && direction == NeighborDirection.Down))
+					if ((y == 0 && direction.Name == "Up") ||
+						(x == 0 && direction.Name == "Left") ||
+						(x == this.dimensions.x-1 && direction.Name == "Right") ||
+						(y == this.dimensions.y-1 && direction.Name == "Down"))
 					{
-						this.data[x][y].setIntersection(direction, IntersectionDescription.CreateDefault());
+						((this.data[x][y] as any) as InternalPiece).setIntersection(direction, IntersectionDescription.CreateDefault());
 						return;
 					}
 
@@ -243,11 +263,11 @@ export class PieceGrid
 					if (precedingNeighbor == null)
 					{
 						// ...create our own
-						this.data[x][y].setIntersection(direction, IntersectionDescription.CreateNew(true, Shape.Sphere, 0.4, new Vector2(1.5, 0.5), new Vector2(0.5, 0.5)));
+						((this.data[x][y] as any) as InternalPiece).setIntersection(direction, IntersectionDescription.CreateNew(true, Shape.Sphere, 0.4, new Vector2(1.5, 0.5), new Vector2(0.5, 0.5)));
 						return;
 					}
 					// ...otherwise create counter for the intersection of the preceding piece
-					this.data[x][y].setIntersection(direction, (precedingNeighbor as Piece).getCounterForIntersection(NeighborDirection.Opposite(direction)));
+					((this.data[x][y] as any) as InternalPiece).setIntersection(direction, ((precedingNeighbor as any) as InternalPiece).getCounterForIntersection(NeighborDirection.Opposite(direction)));
 				});
 			}
 		}
@@ -255,14 +275,14 @@ export class PieceGrid
 
 	item(position : Vector2) : Piece | null
 	{
-		if (position.x >= this.maxSize.x)
+		if (position.x >= this.dimensions.x)
 		{
-			console.error(`Attempting to access grid column ${position.x}, which is bigger than ${this.maxSize.x-1}`);
+			console.error(`Attempting to access grid column ${position.x}, which is bigger than ${this.dimensions.x-1}`);
 			return null;
 		}
-		if (position.y >= this.maxSize.y)
+		if (position.y >= this.dimensions.y)
 		{
-			console.error(`Attempting to access grid row ${position.y}, which is bigger than ${this.maxSize.y-1}`);
+			console.error(`Attempting to access grid row ${position.y}, which is bigger than ${this.dimensions.y-1}`);
 			return null;
 		}
 		if (position.x < 0)

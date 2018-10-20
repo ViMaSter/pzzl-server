@@ -67,22 +67,22 @@ export class Puzzle
 			return a;
 		}
 
-		const pieceAmount : number = this.pieces.maxSize.x * this.pieces.maxSize.y;
+		const pieceAmount : number = this.pieces.Dimensions.x * this.pieces.Dimensions.y;
 		let passedElements : number = 0;
 		let passedHalf : boolean = false;
 		const padding : number = 10;
 		const availableSlots : Vector2 = new Vector2(
-			Math.floor((this.rootElement.getBoundingClientRect() as ClientRect).width / (this.pieces.pieceSize.x + padding*2)),
-			Math.floor((this.rootElement.getBoundingClientRect() as ClientRect).height / (this.pieces.pieceSize.y + padding*2))
+			Math.floor((this.rootElement.getBoundingClientRect() as ClientRect).width / (this.pieces.PieceSize.x + padding*2)),
+			Math.floor((this.rootElement.getBoundingClientRect() as ClientRect).height / (this.pieces.PieceSize.y + padding*2))
 		);
 		let currentSlot : Vector2 = new Vector2(0, 0);
 
 		let order : number[][] = [];
-		order[0] = shuffle([...Array(this.pieces.maxSize.x).keys()]);
-		for (let x : number = 0; x < this.pieces.maxSize.x; x++)
+		order[0] = shuffle([...Array(this.pieces.Dimensions.x).keys()]);
+		for (let x : number = 0; x < this.pieces.Dimensions.x; x++)
 		{
-			order[1] = shuffle([...Array(this.pieces.maxSize.y).keys()]);
-			for (let y : number = 0; y < this.pieces.maxSize.y; y++)
+			order[1] = shuffle([...Array(this.pieces.Dimensions.y).keys()]);
+			for (let y : number = 0; y < this.pieces.Dimensions.y; y++)
 			{
 				const position = new Vector2(order[0][x], order[1][y]);
 				const item = this.pieces.item(position);
@@ -91,11 +91,11 @@ export class Puzzle
 					break;
 				}
 
-				let moveToPosition = Vector2.multiply(currentSlot, Vector2.add(this.pieces.pieceSize, new Vector2(padding, padding)));
+				let moveToPosition = Vector2.multiply(currentSlot, Vector2.add(this.pieces.PieceSize, new Vector2(padding, padding)));
 				moveToPosition = Vector2.add(moveToPosition, new Vector2(padding, padding));
 				if (passedHalf)
 				{
-					moveToPosition.x = (this.rootElement.getBoundingClientRect() as ClientRect).width - (moveToPosition.x + this.pieces.pieceSize.x);
+					moveToPosition.x = (this.rootElement.getBoundingClientRect() as ClientRect).width - (moveToPosition.x + this.pieces.PieceSize.x);
 				}
 				moveToPosition.x -= ((this.rootElement.getBoundingClientRect() as ClientRect).width - (this.playingField.getBoundingClientRect() as ClientRect).width) / 2
 				item.moveTo(moveToPosition);
@@ -120,9 +120,9 @@ export class Puzzle
 
 	private DrawImage(imageElement : HTMLImageElement)
 	{
-		for (let x : number = 0; x < this.pieces.maxSize.x; x++)
+		for (let x : number = 0; x < this.pieces.Dimensions.x; x++)
 		{
-			for (let y : number = 0; y < this.pieces.maxSize.y; y++)
+			for (let y : number = 0; y < this.pieces.Dimensions.y; y++)
 			{
 				const position = new Vector2(x, y);
 				const item = this.pieces.item(position);
@@ -130,16 +130,16 @@ export class Puzzle
 				{
 					break;
 				}
-				const context : CanvasRenderingContext2D = <CanvasRenderingContext2D>item.element.getContext("2d");
+				const context : CanvasRenderingContext2D = <CanvasRenderingContext2D>item.Element.getContext("2d");
 				context.globalAlpha = 0.4;
 				context.drawImage(
 					imageElement,
-					imageElement.naturalWidth / this.pieces.maxSize.x * x,
-					imageElement.naturalHeight / this.pieces.maxSize.y * y,
-					imageElement.naturalWidth / this.pieces.maxSize.x,
-					imageElement.naturalHeight / this.pieces.maxSize.y,
+					imageElement.naturalWidth / this.pieces.Dimensions.x * x,
+					imageElement.naturalHeight / this.pieces.Dimensions.y * y,
+					imageElement.naturalWidth / this.pieces.Dimensions.x,
+					imageElement.naturalHeight / this.pieces.Dimensions.y,
 					0, 0,
-					item.size.x, item.size.y
+					item.Size.x, item.Size.y
 				);
 			}
 		}
@@ -147,9 +147,9 @@ export class Puzzle
 
 	private GenerateGrid()
 	{
-		for (let x : number = 0; x < this.pieces.maxSize.x; x++)
+		for (let x : number = 0; x < this.pieces.Dimensions.x; x++)
 		{
-			for (let y : number = 0; y < this.pieces.maxSize.y; y++)
+			for (let y : number = 0; y < this.pieces.Dimensions.y; y++)
 			{
 				const position = new Vector2(x, y);
 				const item = this.pieces.item(position);
@@ -157,7 +157,7 @@ export class Puzzle
 				{
 					break;
 				}
-				this.playingField.appendChild((item as PuzzlePiece.Piece).element);
+				this.playingField.appendChild((item as PuzzlePiece.Piece).Element);
 			}
 		}
 	}
@@ -205,15 +205,15 @@ export class Puzzle
 	// Snapping and overlapping
 	private handleOverlap(droppedPiece : PuzzlePiece.Piece, collider : PuzzlePiece.Piece)
 	{
-		const droppedRect : ClientRect = droppedPiece.element.getBoundingClientRect() as ClientRect;
-		const collidingRect : ClientRect = collider.element.getBoundingClientRect() as ClientRect;
+		const droppedRect : ClientRect = droppedPiece.Element.getBoundingClientRect() as ClientRect;
+		const collidingRect : ClientRect = collider.Element.getBoundingClientRect() as ClientRect;
 
 		let leftInBounds : 		boolean = droppedRect.left >		(collidingRect.left - 	this.snapThresholdInPx) && droppedRect.left < 		(collidingRect.right + 		this.snapThresholdInPx);
 		let rightInBounds : 	boolean = droppedRect.right <		(collidingRect.right + 	this.snapThresholdInPx) && droppedRect.right > 		(collidingRect.left - 		this.snapThresholdInPx);
 		let bottomInBounds : 	boolean = droppedRect.bottom <		(collidingRect.bottom +	this.snapThresholdInPx) && droppedRect.bottom > 	(collidingRect.top -		this.snapThresholdInPx);
 		let topInBounds : 		boolean = droppedRect.top >			(collidingRect.top -	this.snapThresholdInPx) && droppedRect.top < 		(collidingRect.bottom + 	this.snapThresholdInPx);
 
-		console.log(`[${droppedPiece.position.x}, ${droppedPiece.position.y}] collides with [${collider.position.x}, ${collider.position.y}]`);
+		console.log(`[${droppedPiece.Position.x}, ${droppedPiece.Position.y}] collides with [${collider.Position.x}, ${collider.Position.y}]`);
 		console.log(`Overlap: left:${leftInBounds} right:${rightInBounds} top:${topInBounds} bottom:${bottomInBounds}`);
 		
 		if (leftInBounds && rightInBounds && !topInBounds && bottomInBounds)
@@ -236,21 +236,21 @@ export class Puzzle
 
 	private checkForOverlap(piece : PuzzlePiece.Piece)
 	{
-		const currentRect : DOMRect = piece.element.getBoundingClientRect() as DOMRect;
+		const currentRect : DOMRect = piece.Element.getBoundingClientRect() as DOMRect;
 		let overlaps : PuzzlePiece.Piece[] = [];
 
-		for (let x : number = 0; x < this.pieces.maxSize.x; x++)
+		for (let x : number = 0; x < this.pieces.Dimensions.x; x++)
 		{
-			for (let y : number = this.pieces.maxSize.y - 1; y >= 0; y--)
+			for (let y : number = this.pieces.Dimensions.y - 1; y >= 0; y--)
 			{
-				if (x == piece.position.x && y == piece.position.y)
+				if (x == piece.Position.x && y == piece.Position.y)
 				{
 					continue;
 				}
 
 				const position : Vector2 = new Vector2(x, y);
 				const item : PuzzlePiece.Piece = this.pieces.item(position) as PuzzlePiece.Piece;
-				if (Rect.OverlapsWithBuffer(currentRect, item.element.getBoundingClientRect() as DOMRect, this.snapThresholdInPx))
+				if (Rect.OverlapsWithBuffer(currentRect, item.Element.getBoundingClientRect() as DOMRect, this.snapThresholdInPx))
 				{
 					overlaps.push(item);
 				}
@@ -264,7 +264,7 @@ export class Puzzle
 				let notNeighbor = true;
 				PuzzlePiece.NeighborDirection.ForEach((direction : PuzzlePiece.NeighborDirection) =>
 				{
-					if (piece.hasNeighbor(direction) && piece.getNeighbor(direction).position == item.position)
+					if (piece.hasNeighbor(direction) && piece.getNeighbor(direction).Position == item.Position)
 					{
 						notNeighbor = false;
 						return false;
@@ -282,7 +282,7 @@ export class Puzzle
 	// Out-of-screen helper
 	private fixScreenBorderPosition(piece : PuzzlePiece.Piece)
 	{
-		const pieceBounds = piece.element.getBoundingClientRect();
+		const pieceBounds = piece.Element.getBoundingClientRect();
 		const boardBounds = this.rootElement.getBoundingClientRect();
 		const helperPadding = 10;
 
