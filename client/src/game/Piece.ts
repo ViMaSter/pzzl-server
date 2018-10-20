@@ -148,6 +148,23 @@ export class Piece
 	}
 	protected static Create(position : Vector2, size : Vector2, onSelect : ToggleItemCallback, onDeselect : ToggleItemCallback) : Piece
 	{
+		if (position.x < 0)
+		{
+			throw new RangeError("Position X has to be 0 or bigger!");
+		}
+		if (position.y < 0)
+		{
+			throw new RangeError("Position Y has to be 0 or bigger!");
+		}
+		if (size.x <= 0)
+		{
+			throw new RangeError("Size X has to be bigger than 0!");
+		}
+		if (size.y <= 0)
+		{
+			throw new RangeError("Size Y has to be bigger than 0!");
+		}
+
 		let newPiece : Piece = new Piece();
 		newPiece.position = position;
 		newPiece.size = size;
@@ -168,7 +185,7 @@ export class Piece
 
 	private setupDebugText()
 	{
-		const context : CanvasRenderingContext2D = <CanvasRenderingContext2D>this.element.getContext("2d");
+		const context : CanvasRenderingContext2D = this.element.getContext("2d") as CanvasRenderingContext2D;
 		context.font = "20px Arial";
 		context.fillStyle = 'white';
 		context.fillText(`[${this.position.x}, ${this.position.y}]`, 0, 40);

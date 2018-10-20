@@ -80,12 +80,11 @@ describe('MouseListener', () => {
 		expect(callbackB.mock.calls[0]).not.toMatchObject(callbackA.mock.calls[2]);
 	});
 
-
 	test("Once this test fails, TypeScript is able to properly mock Touch-events and have to replace this test with something like 'mousemoveWithAttach' for touch-events.", () => {
-		const t = () => {
+		const touchEventAvailabilityTest = () => {
 			const touchList : TouchList = new TouchList();
 		};
-		expect(t).toThrow(ReferenceError);
+		expect(touchEventAvailabilityTest).toThrow(ReferenceError);
 	});
 
 });
