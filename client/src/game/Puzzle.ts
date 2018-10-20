@@ -3,15 +3,15 @@ import {Rect as Rect} from "util/Rect"
 import * as PuzzlePiece from "game/Piece"
 import {MouseListener as MouseListener} from "util/MouseListener"
 
-class PuzzlePieceConnection
+export class PuzzlePieceConnection
 {
 	private affectedPiece : PuzzlePiece.Piece
 	private direction : PuzzlePiece.NeighborDirection|null;
 	private sourcePiece : PuzzlePiece.Piece|null;
 
-	getAffectedPiece() : PuzzlePiece.Piece { return this.affectedPiece; }
-	getDirection() : PuzzlePiece.NeighborDirection { return <PuzzlePiece.NeighborDirection>this.direction; }
-	getSourcePiece() : PuzzlePiece.Piece { return <PuzzlePiece.Piece>this.sourcePiece; }
+	get AffectedPiece() : PuzzlePiece.Piece { return this.affectedPiece; }
+	get Direction() : PuzzlePiece.NeighborDirection { return <PuzzlePiece.NeighborDirection>this.direction; }
+	get SourcePiece() : PuzzlePiece.Piece { return <PuzzlePiece.Piece>this.sourcePiece; }
 
 	isSourcePiece() : boolean
 	{
@@ -326,24 +326,24 @@ export class Puzzle
 		{
 			const nextConnection : PuzzlePieceConnection = itemsToProcess.shift() as PuzzlePieceConnection;
 			// ...mark the affected piece as processed
-			itemsProcessed.push(nextConnection.getAffectedPiece());
+			itemsProcessed.push(nextConnection.AffectedPiece);
 
 			// ...find all valid neighbors and mark them as "to be processed"
 			PuzzlePiece.NeighborDirection.ForEach((direction : PuzzlePiece.NeighborDirection) =>
 			{
 				// ...check if we have a neighbor in this direction
-				if (!nextConnection.getAffectedPiece().hasNeighbor(direction))
+				if (!nextConnection.AffectedPiece.hasNeighbor(direction))
 				{
 					return;
 				}
 				// ...if so, check if we've already touched it
-				const neighborElement = nextConnection.getAffectedPiece().getNeighbor(direction);
+				const neighborElement = nextConnection.AffectedPiece.getNeighbor(direction);
 				if (itemsProcessed.indexOf(neighborElement) != -1)
 				{
 					return;
 				}
 				// ...if not, mark it as "to be processed"
-				itemsToProcess.push(new PuzzlePieceConnection(neighborElement, direction, nextConnection.getAffectedPiece()));
+				itemsToProcess.push(new PuzzlePieceConnection(neighborElement, direction, nextConnection.AffectedPiece));
 			});
 
 			// ...the source block initiating this process doesn't need to be moved (it's movement is what causes connected pieces to follow)
@@ -353,7 +353,7 @@ export class Puzzle
 			}
 
 			// ...take the source piece this piece is a neighbor of (and in which direction) and offset this piece accordingly
-			nextConnection.getAffectedPiece().moveTo(Vector2.add(nextConnection.getSourcePiece().getPosition(), Vector2.multiply(nextConnection.getDirection().Position, 50)));
+			nextConnection.AffectedPiece.moveTo(Vector2.add(nextConnection.SourcePiece.getPosition(), Vector2.multiply(nextConnection.Direction.Position, 50)));
 		}
 	}
 };

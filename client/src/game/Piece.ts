@@ -1,4 +1,5 @@
-import {Vector2 as Vector2} from "util/Vector2"
+import { Vector2 } from "util/Vector2"
+import { InternalPiece } from "game/InternalPiece" 
 
 export type ToggleItemCallback = (piece : Piece) => void;
 
@@ -89,13 +90,6 @@ export class IntersectionDescription
 			Vector2.multiply(sourceIntersection.offset, new Vector2(-1, -1))
 		);
 	}
-}
-
-interface InternalPiece
-{
-	Create: (position : Vector2, size : Vector2, onSelect : ToggleItemCallback, onDeselect : ToggleItemCallback) => InternalPiece;
-	setIntersection: (direction : NeighborDirection, intersectionDescription : IntersectionDescription) => boolean;
-	getCounterForIntersection: (direction : NeighborDirection) => IntersectionDescription;
 }
 
 export class Piece

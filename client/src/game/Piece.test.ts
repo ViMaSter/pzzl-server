@@ -3,12 +3,7 @@ import "jest-extended"
 import {Vector2} from "util/Vector2" 
 
 import { Piece, IntersectionDescription, NeighborDirection, ToggleItemCallback } from "game/Piece" 
-interface InternalPiece
-{
-	Create: (index : Vector2, size : Vector2, onSelect : ToggleItemCallback, onDeselect : ToggleItemCallback) => InternalPiece;
-	setIntersection: (direction : NeighborDirection, intersectionDescription : IntersectionDescription) => void;
-	getCounterForIntersection: (direction : NeighborDirection) => IntersectionDescription;
-}
+import { InternalPiece } from "game/InternalPiece" 
 
 describe('Piece', () => {
 
