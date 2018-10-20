@@ -16,8 +16,8 @@ describe('MouseListener', () => {
 	beforeEach(() => {
  		listener = new MouseListener();
 
- 		callbackA = jest.fn((lastPosition : Vector2, newPosition : Vector2, deltaPosition : Vector2) => {});
- 		callbackB = jest.fn((lastPosition : Vector2, newPosition : Vector2, deltaPosition : Vector2) => {});
+ 		callbackA = jest.fn();
+ 		callbackB = jest.fn();
 	});
 
 	test('initialAttach', () => {
