@@ -259,49 +259,48 @@ export class PieceGrid
 					}
 
 					// If we have don't have neighbors in a direction...
-					const precedingNeighbor : Piece | null = this.item(Vector2.add(position, direction.Position));
-					if (precedingNeighbor == null)
+					if (!this.hasItem(Vector2.add(position, direction.Position)))
 					{
 						// ...create our own
 						((this.data[x][y] as any) as InternalPiece).setIntersection(direction, IntersectionDescription.CreateNew(true, Shape.Sphere, 0.4, new Vector2(1.5, 0.5), new Vector2(0.5, 0.5)));
 						return;
 					}
 					// ...otherwise create counter for the intersection of the preceding piece
+					const precedingNeighbor : Piece = this.item(Vector2.add(position, direction.Position));
 					((this.data[x][y] as any) as InternalPiece).setIntersection(direction, ((precedingNeighbor as any) as InternalPiece).getCounterForIntersection(NeighborDirection.Opposite(direction)));
 				});
 			}
 		}
 	}
 
-	item(position : Vector2) : Piece | null
+	hasItem(position : Vector2) : boolean
 	{
 		if (position.x >= this.dimensions.x)
 		{
-			console.error(`Attempting to access grid column ${position.x}, which is bigger than ${this.dimensions.x-1}`);
-			return null;
+			return false;
 		}
 		if (position.y >= this.dimensions.y)
 		{
-			console.error(`Attempting to access grid row ${position.y}, which is bigger than ${this.dimensions.y-1}`);
-			return null;
+			return false;
 		}
 		if (position.x < 0)
 		{
-			console.error(`Attempting to access grid column ${position.x}, which is smaller than 0`);
-			return null;
+			return false;
 		}
 		if (position.y < 0)
 		{
-			console.error(`Attempting to access grid row ${position.y}, which is smaller than 0`);
-			return null;
+			return false;
 		}
-
 		if (typeof this.data[position.x] == "undefined" || typeof this.data[position.x][position.y] == "undefined")
 		{
-			return null;
+			return false;
 		}
+		return true;
+	}
 
-		return this.data[position.x][position.y];
+	item(position : Vector2) : Piece
+	{
+		return this.data[position.x][position.y] as Piece;
 	}
 
 	itemFromElement(element : HTMLElement)

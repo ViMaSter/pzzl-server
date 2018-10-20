@@ -85,12 +85,12 @@ export class Puzzle
 			for (let y : number = 0; y < this.pieces.Dimensions.y; y++)
 			{
 				const position = new Vector2(order[0][x], order[1][y]);
-				const item = this.pieces.item(position);
-				if (item == null)
+				if (!this.pieces.hasItem(position))
 				{
 					break;
 				}
 
+				const item = this.pieces.item(position);
 				let moveToPosition = Vector2.multiply(currentSlot, Vector2.add(this.pieces.PieceSize, new Vector2(padding, padding)));
 				moveToPosition = Vector2.add(moveToPosition, new Vector2(padding, padding));
 				if (passedHalf)
@@ -125,11 +125,12 @@ export class Puzzle
 			for (let y : number = 0; y < this.pieces.Dimensions.y; y++)
 			{
 				const position = new Vector2(x, y);
-				const item = this.pieces.item(position);
-				if (item == null)
+				if (!this.pieces.hasItem(position))
 				{
 					break;
 				}
+
+				const item = this.pieces.item(position);
 				const context : CanvasRenderingContext2D = <CanvasRenderingContext2D>item.Element.getContext("2d");
 				context.globalAlpha = 0.4;
 				context.drawImage(
@@ -152,11 +153,12 @@ export class Puzzle
 			for (let y : number = 0; y < this.pieces.Dimensions.y; y++)
 			{
 				const position = new Vector2(x, y);
-				const item = this.pieces.item(position);
-				if (item == null)
+				if (!this.pieces.hasItem(position))
 				{
 					break;
 				}
+
+				const item = this.pieces.item(position);
 				this.playingField.appendChild((item as PuzzlePiece.Piece).Element);
 			}
 		}
@@ -249,7 +251,12 @@ export class Puzzle
 				}
 
 				const position : Vector2 = new Vector2(x, y);
-				const item : PuzzlePiece.Piece = this.pieces.item(position) as PuzzlePiece.Piece;
+				if (!this.pieces.hasItem(position))
+				{
+					continue;
+				}
+
+				const item = this.pieces.item(position);
 				if (Rect.OverlapsWithBuffer(currentRect, item.Element.getBoundingClientRect() as DOMRect, this.snapThresholdInPx))
 				{
 					overlaps.push(item);
