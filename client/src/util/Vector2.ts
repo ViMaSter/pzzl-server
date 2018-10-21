@@ -6,6 +6,12 @@ export class Vector2
 	{
 		this.set(x, y);
 	}
+
+	toString() : string
+	{
+		return `[${this.x}, ${this.y}]`;
+	}
+
 	set(x : number, y : number)
 	{
 		if (x == undefined)
@@ -36,6 +42,13 @@ export class Vector2
 		return new Vector2(
 			posA.x + posB.x,
 			posA.y + posB.y
+		);
+	}
+	static subtract(posA : Vector2, posB : Vector2) : Vector2
+	{
+		return new Vector2(
+			posA.x - posB.x,
+			posA.y - posB.y
 		);
 	}
 	static multiply(posA : Vector2, factor : number|Vector2) : Vector2

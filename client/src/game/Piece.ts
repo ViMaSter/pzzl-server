@@ -172,6 +172,10 @@ export class Piece
 		newPiece.Element.style.top = "0px";
 		newPiece.Element.style.left = "0px";
 
+		// required for canvas scaling
+		newPiece.Element.width = size.x;
+		newPiece.Element.height = size.y;
+
 		newPiece.Element.addEventListener(	"touchstart",	()=>{onSelect(newPiece)}	);
 		newPiece.Element.addEventListener(	"mousedown",	()=>{onSelect(newPiece)}	);
 		window.addEventListener(			"touchend",		()=>{onDeselect(newPiece)}	);

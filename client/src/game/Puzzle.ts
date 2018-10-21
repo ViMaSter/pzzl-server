@@ -26,6 +26,7 @@ export class PuzzlePieceConnection
 	}
 }
 
+type ConnectedPiecesCallback = (connection : PuzzlePieceConnection) => void;
 export class Puzzle
 {
 	// Main
@@ -37,23 +38,26 @@ export class Puzzle
 	private listener : MouseListener;
 
 	private snapThresholdInPx : number;
+	get SnapThresholdInPx() : number { return this.snapThresholdInPx; }
 
 	constructor(rootElement : HTMLElement, image : HTMLImageElement, dimensions : Vector2)
 	{
+		this.snapThresholdInPx = 10;
+		
 		if (rootElement == null)
 		{
 			throw new ReferenceError("rootElement is an invalid element");
 		}
 		this.rootElement = rootElement;
+
 		if (this.rootElement.querySelector("#playingfield") as HTMLElement == null)
 		{
 			throw new ReferenceError("rootElement has no '#playingfield'-child");
 		}
 		this.playingField = this.rootElement.querySelector("#playingfield") as HTMLElement;
 
-		this.snapThresholdInPx = 10;
-
 		this.listener = new MouseListener();
+
 		this.pieces = new PuzzlePiece.PieceGrid(dimensions, new Vector2(50, 50), this.onSelectItem.bind(this), this.onDeselectItem.bind(this));
 
 		this.GenerateGrid();
@@ -82,15 +86,14 @@ export class Puzzle
 		const pieceAmount : number = this.pieces.Dimensions.x * this.pieces.Dimensions.y;
 		let passedElements : number = 0;
 		let passedHalf : boolean = false;
-		const padding : number = 10;
 		if (Number.isNaN((this.rootElement.getBoundingClientRect() as ClientRect).width))
 		{
 			console.trace();
 			console.log(this.rootElement.innerHTML);
 		}
 		const availableSlots : Vector2 = new Vector2(
-			Math.floor((this.rootElement.getBoundingClientRect() as ClientRect).width / (this.pieces.PieceSize.x + padding*2)),
-			Math.floor((this.rootElement.getBoundingClientRect() as ClientRect).height / (this.pieces.PieceSize.y + padding*2))
+			Math.floor((this.rootElement.getBoundingClientRect() as ClientRect).width / (this.pieces.PieceSize.x + this.snapThresholdInPx*2)),
+			Math.floor((this.rootElement.getBoundingClientRect() as ClientRect).height / (this.pieces.PieceSize.y + this.snapThresholdInPx*2))
 		);
 		let currentSlot : Vector2 = new Vector2(0, 0);
 
@@ -108,8 +111,8 @@ export class Puzzle
 				}
 
 				const item = this.pieces.item(position);
-				let moveToPosition = Vector2.multiply(currentSlot, Vector2.add(this.pieces.PieceSize, new Vector2(padding, padding)));
-				moveToPosition = Vector2.add(moveToPosition, new Vector2(padding, padding));
+				let moveToPosition = Vector2.multiply(currentSlot, Vector2.add(this.pieces.PieceSize, new Vector2(this.snapThresholdInPx, this.snapThresholdInPx)));
+				moveToPosition = Vector2.add(moveToPosition, new Vector2(this.snapThresholdInPx, this.snapThresholdInPx));
 				if (passedHalf)
 				{
 					moveToPosition.x = (this.rootElement.getBoundingClientRect() as ClientRect).width - (moveToPosition.x + this.pieces.PieceSize.x);
@@ -204,7 +207,12 @@ export class Puzzle
 
 		this.checkForOverlap(this.activePiece);
 
-		this.fixChildPosition(this.activePiece);
+		this.forEachConnectedPiece(this.activePiece, (connection : PuzzlePieceConnection) =>
+		{
+			// ...take the source piece this piece is a neighbor of (and in which direction) and offset this piece accordingly
+			connection.AffectedPiece.moveTo(Vector2.add(connection.SourcePiece.getPosition(), Vector2.multiply(connection.Direction.Position, 50)));
+			this.fixScreenBorderPosition(connection.AffectedPiece);
+		});
 
 		this.activePiece = null;
 	}
@@ -218,7 +226,11 @@ export class Puzzle
 
 		this.activePiece.moveBy(deltaPosition);
 
-		this.fixChildPosition(this.activePiece);
+		this.forEachConnectedPiece(this.activePiece, (connection : PuzzlePieceConnection) =>
+		{
+			// ...take the source piece this piece is a neighbor of (and in which direction) and offset this piece accordingly
+			connection.AffectedPiece.moveTo(Vector2.add(connection.SourcePiece.getPosition(), Vector2.multiply(connection.Direction.Position, 50)));
+		});
 	}
 
 	// Snapping and overlapping
@@ -305,31 +317,39 @@ export class Puzzle
 	{
 		const pieceBounds = piece.Element.getBoundingClientRect();
 		const boardBounds = this.rootElement.getBoundingClientRect();
-		const helperPadding = 10;
 
 		let overlap : Vector2 = new Vector2(0, 0);
 		if (pieceBounds.left < boardBounds.left)
 		{
-			overlap.x += boardBounds.left - pieceBounds.left + helperPadding;
+			overlap.x += boardBounds.left - pieceBounds.left + this.snapThresholdInPx;
 		}
 		if (pieceBounds.right > boardBounds.right)
 		{
-			overlap.x -= pieceBounds.right - boardBounds.right + helperPadding;
+			overlap.x -= pieceBounds.right - boardBounds.right + this.snapThresholdInPx;
 		}
 		if (pieceBounds.top < boardBounds.top)
 		{
-			overlap.y += boardBounds.top - pieceBounds.top + helperPadding;
+			overlap.y += boardBounds.top - pieceBounds.top + this.snapThresholdInPx;
 		}
 		if (pieceBounds.bottom > boardBounds.bottom)
 		{
-			overlap.y -= pieceBounds.bottom - boardBounds.bottom + helperPadding;
+			overlap.y -= pieceBounds.bottom - boardBounds.bottom + this.snapThresholdInPx;
 		}
 
 		piece.moveBy(overlap);
+		if (overlap.x != 0 || overlap.y != 0)
+		{
+			this.forEachConnectedPiece(piece, (connection : PuzzlePieceConnection) =>
+			{
+				// ...take the source piece this piece is a neighbor of (and in which direction) and offset this piece accordingly
+				connection.AffectedPiece.moveTo(Vector2.add(connection.SourcePiece.getPosition(), Vector2.multiply(connection.Direction.Position, 50)));
+				this.fixScreenBorderPosition(connection.AffectedPiece);
+			});
+		}
 	}
 
 	// Out-of-screen helper
-	private fixChildPosition(piece : PuzzlePiece.Piece)
+	private forEachConnectedPiece(piece : PuzzlePiece.Piece, callback : ConnectedPiecesCallback)
 	{
 		let itemsProcessed : PuzzlePiece.Piece[] = [];
 		// Set the piece the player interacted with as starting point
@@ -366,8 +386,7 @@ export class Puzzle
 				continue;
 			}
 
-			// ...take the source piece this piece is a neighbor of (and in which direction) and offset this piece accordingly
-			nextConnection.AffectedPiece.moveTo(Vector2.add(nextConnection.SourcePiece.getPosition(), Vector2.multiply(nextConnection.Direction.Position, 50)));
+			callback(nextConnection)
 		}
 	}
 };

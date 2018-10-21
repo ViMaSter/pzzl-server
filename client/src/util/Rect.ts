@@ -2,10 +2,11 @@ export class Rect
 {
 	static Overlaps(rectA : DOMRect, rectB : DOMRect) : boolean
 	{
-		return (rectA.left < rectB.right && rectA.right > rectB.left && -rectA.top > -rectB.bottom && -rectA.bottom < -rectB.top ) 
+		return Rect.OverlapsWithBuffer(rectA, rectB, 0);
 	}
 	static OverlapsWithBuffer(rectA : DOMRect, rectB : DOMRect, buffer : number) : boolean
 	{
-		return (rectA.left < (rectB.right + buffer) && rectA.right > (rectB.left - buffer) && -rectA.top > (-rectB.bottom-buffer) && -rectA.bottom < (-rectB.top+buffer) ) 
+		const overlaps : boolean = (rectA.left < (rectB.right + buffer) && rectA.right > (rectB.left - buffer) && -rectA.top > (-rectB.bottom-buffer) && -rectA.bottom < (-rectB.top+buffer) );
+		return (rectA.left < (rectB.right + buffer) && rectA.right > (rectB.left - buffer) && -rectA.top > (-rectB.bottom-buffer) && -rectA	.bottom < (-rectB.top+buffer) ) 
 	}
 }
