@@ -38,9 +38,17 @@ export class Puzzle
 
 	private snapThresholdInPx : number;
 
-	constructor(rootElement : HTMLElement, dimensions : Vector2)
+	constructor(rootElement : HTMLElement, image : HTMLImageElement, dimensions : Vector2)
 	{
+		if (rootElement == null)
+		{
+			throw new ReferenceError("rootElement is an invalid element");
+		}
 		this.rootElement = rootElement;
+		if (this.rootElement.querySelector("#playingfield") as HTMLElement == null)
+		{
+			throw new ReferenceError("rootElement has no '#playingfield'-child");
+		}
 		this.playingField = this.rootElement.querySelector("#playingfield") as HTMLElement;
 
 		this.snapThresholdInPx = 10;
@@ -50,7 +58,11 @@ export class Puzzle
 
 		this.GenerateGrid();
 
-		this.DrawImage(document.querySelector("img") as HTMLImageElement);
+		if (image == null)
+		{
+			throw new ReferenceError("No valid image-element was supplied");
+		}
+		this.DrawImage(image);
 
 		this.ShufflePieces();
 
@@ -71,6 +83,11 @@ export class Puzzle
 		let passedElements : number = 0;
 		let passedHalf : boolean = false;
 		const padding : number = 10;
+		if (Number.isNaN((this.rootElement.getBoundingClientRect() as ClientRect).width))
+		{
+			console.trace();
+			console.log(this.rootElement.innerHTML);
+		}
 		const availableSlots : Vector2 = new Vector2(
 			Math.floor((this.rootElement.getBoundingClientRect() as ClientRect).width / (this.pieces.PieceSize.x + padding*2)),
 			Math.floor((this.rootElement.getBoundingClientRect() as ClientRect).height / (this.pieces.PieceSize.y + padding*2))
@@ -215,9 +232,6 @@ export class Puzzle
 		let bottomInBounds : 	boolean = droppedRect.bottom <		(collidingRect.bottom +	this.snapThresholdInPx) && droppedRect.bottom > 	(collidingRect.top -		this.snapThresholdInPx);
 		let topInBounds : 		boolean = droppedRect.top >			(collidingRect.top -	this.snapThresholdInPx) && droppedRect.top < 		(collidingRect.bottom + 	this.snapThresholdInPx);
 
-		console.log(`[${droppedPiece.Index.x}, ${droppedPiece.Index.y}] collides with [${collider.Index.x}, ${collider.Index.y}]`);
-		console.log(`Overlap: left:${leftInBounds} right:${rightInBounds} top:${topInBounds} bottom:${bottomInBounds}`);
-		
 		if (leftInBounds && rightInBounds && !topInBounds && bottomInBounds)
 		{
 			droppedPiece.setNeighbor(PuzzlePiece.NeighborDirection.Down, collider);
@@ -293,7 +307,7 @@ export class Puzzle
 		const boardBounds = this.rootElement.getBoundingClientRect();
 		const helperPadding = 10;
 
-		let overlap : Vector2 = new Vector2();
+		let overlap : Vector2 = new Vector2(0, 0);
 		if (pieceBounds.left < boardBounds.left)
 		{
 			overlap.x += boardBounds.left - pieceBounds.left + helperPadding;

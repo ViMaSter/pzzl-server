@@ -19,6 +19,18 @@ describe('Piece', () => {
 		let pieceSize : Vector2 = new Vector2(50, 50);
 		let construction = () => {};
 
+		dimensions = new Vector2(0, 0);
+		construction = () => {
+			const pieceGrid : PieceGrid = new PieceGrid(dimensions, pieceSize, ()=>{}, ()=>{});
+		};
+		expect(construction).toThrowWithMessage(RangeError, "Dimensions X has to be bigger than 0");
+
+		dimensions = new Vector2(10, 0);
+		construction = () => {
+			const pieceGrid : PieceGrid = new PieceGrid(dimensions, pieceSize, ()=>{}, ()=>{});
+		};
+		expect(construction).toThrowWithMessage(RangeError, "Dimensions Y has to be bigger than 0");
+
 		dimensions = new Vector2(-1, -1);
 		construction = () => {
 			const pieceGrid : PieceGrid = new PieceGrid(dimensions, pieceSize, ()=>{}, ()=>{});
@@ -72,6 +84,7 @@ describe('Piece', () => {
 					return pieceGrid.item(new Vector2(x, y));
 				};
 				expect(access).not.toThrow(TypeError);
+				expect(pieceGrid.item(new Vector2(x, y)).Index).toMatchObject(new Vector2(x, y));
 			}
 		}
 		for (let x : number = dimensions.x; x < dimensions.x+dimensions.x; x++)

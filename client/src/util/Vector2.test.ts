@@ -1,3 +1,5 @@
+import "jest-extended"
+
 import {Vector2 as Vector2} from "util/Vector2"
 
 describe('Vector2', () => {
@@ -7,6 +9,11 @@ describe('Vector2', () => {
 		expect(new Vector2(1, 1)).toMatchObject({x: 1, y: 1});
 		expect(new Vector2(2, 2)).not.toMatchObject({x: 1, y: 1});
 		expect(new Vector2(0.5, 0.5)).toMatchObject({x: 0.5, y: 0.5});
+		expect(()=>{new Vector2(NaN, 2)}).toThrowWithMessage(RangeError, "X cannot be NaN");
+		expect(()=>{new Vector2(1, NaN)}).toThrowWithMessage(RangeError, "Y cannot be NaN");
+		let n : number;
+		expect(()=>{new Vector2(n, 2)}).toThrowWithMessage(RangeError, "X cannot be undefined");
+		expect(()=>{new Vector2(1, n)}).toThrowWithMessage(RangeError, "Y cannot be undefined");
 	})
 
 	test('fromString', () => {
@@ -16,8 +23,6 @@ describe('Vector2', () => {
 		expect(Vector2.fromString("0.5", "0.6" )	).toMatchObject(		new Vector2(0.5, 0.6));
 		expect(Vector2.fromString("0,5", "0,6" )	).toMatchObject(		new Vector2(0, 0));
 		expect(Vector2.fromString("1px2", "1px2" )	).toMatchObject(		new Vector2(1, 1));
-		expect(Vector2.fromString("", "" )			).toMatchObject(		new Vector2(NaN, NaN));
-		expect(Vector2.fromString("AA", "BB" )		).toMatchObject(		new Vector2(NaN, NaN));
 		expect(Vector2.fromString("2", "2" )		).not.toMatchObject(	new Vector2(1, 1));
 	})
 

@@ -166,8 +166,11 @@ export class Piece
 		newPiece.Element.classList.add("piece");	
 		newPiece.Element.dataset.x = index.x + "";
 		newPiece.Element.dataset.y = index.y + "";
-		newPiece.Element.width = size.x;
-		newPiece.Element.height = size.y;
+		newPiece.Element.style.position = "absolute";
+		newPiece.Element.style.width = size.x + "px";
+		newPiece.Element.style.height = size.y + "px";
+		newPiece.Element.style.top = "0px";
+		newPiece.Element.style.left = "0px";
 
 		newPiece.Element.addEventListener(	"touchstart",	()=>{onSelect(newPiece)}	);
 		newPiece.Element.addEventListener(	"mousedown",	()=>{onSelect(newPiece)}	);
@@ -243,19 +246,19 @@ export class PieceGrid
 	
 	constructor(dimensions : Vector2, pieceSize : Vector2, onSelect : ToggleItemCallback, onDeselect : ToggleItemCallback)
 	{
-		if (dimensions.x < 0)
+		if (dimensions.x <= 0)
 		{
 			throw new RangeError("Dimensions X has to be bigger than 0");
 		}
-		if (dimensions.y < 0)
+		if (dimensions.y <= 0)
 		{
 			throw new RangeError("Dimensions Y has to be bigger than 0");
 		}
-		if (pieceSize.x < 0)
+		if (pieceSize.x <= 0)
 		{
 			throw new RangeError("PieceSize X has to be bigger than 0");
 		}
-		if (pieceSize.y < 0)
+		if (pieceSize.y <= 0)
 		{
 			throw new RangeError("PieceSize Y has to be bigger than 0");
 		}

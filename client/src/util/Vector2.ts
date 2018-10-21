@@ -2,8 +2,28 @@ export class Vector2
 {
 	x : number = 0;
 	y : number = 0;
-	constructor(x : number = 0, y : number = 0)
+	constructor(x : number, y : number)
 	{
+		this.set(x, y);
+	}
+	set(x : number, y : number)
+	{
+		if (x == undefined)
+		{
+			throw new RangeError("X cannot be undefined");
+		}
+		if (y == undefined)
+		{
+			throw new RangeError("Y cannot be undefined");
+		}
+		if (Number.isNaN(x))
+		{
+			throw new RangeError("X cannot be NaN");
+		}
+		if (Number.isNaN(y))
+		{
+			throw new RangeError("Y cannot be NaN");
+		}
 		this.x = x;
 		this.y = y;
 	}

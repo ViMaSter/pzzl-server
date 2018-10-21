@@ -2,11 +2,6 @@ const globalAny : any = global;
 import {MouseListener as MouseListener} from "util/MouseListener"	
 
 import {Vector2 as Vector2} from "util/Vector2"	
-let reportedValues : any = {
-	lastPosition: new Vector2(),
-	newPosition: new Vector2(),
-	deltaPosition: new Vector2()
-};
 let callbackA : any;
 let callbackB : any;
 
