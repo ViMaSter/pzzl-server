@@ -10,7 +10,8 @@ describe('Piece', () => {
 	test('CreateCounterCorrect', () => {
 		const index : Vector2 = new Vector2(0, 0);
 		const size : Vector2 = new Vector2(50, 50);
-		const piece : Piece = ((Piece as any) as InternalPiece).Create(index, size, ()=>{}, ()=>{}) as any as Piece;
+		const intersectionPadding : Vector2 = new Vector2(10, 10);
+		const piece : Piece = ((Piece as any) as InternalPiece).Create(index, size, intersectionPadding, ()=>{}, ()=>{}) as any as Piece;
 		
 		expect(Vector2.equal(piece.Index, index)).toBe(true);
 		expect(Vector2.equal(piece.Size, size)).toBe(true);
@@ -19,16 +20,17 @@ describe('Piece', () => {
 	test('CreateCounterInvalidIndex', () => {
 		let index : Vector2 = new Vector2(0, 0);
 		const size : Vector2 = new Vector2(50, 50);
+		const intersectionPadding : Vector2 = new Vector2(10, 10);
 
 		index = new Vector2(-1, 0);
 		let construction = () => {
-			const piece : Piece = ((Piece as any) as InternalPiece).Create(index, size, ()=>{}, ()=>{}) as any as Piece;
+			const piece : Piece = ((Piece as any) as InternalPiece).Create(index, size, intersectionPadding, ()=>{}, ()=>{}) as any as Piece;
 		};
 		expect(construction).toThrowWithMessage(RangeError, "Index X has to be 0 or bigger");
 
 		index = new Vector2(0, -1);
 		construction = () => {
-			const piece : Piece = ((Piece as any) as InternalPiece).Create(index, size, ()=>{}, ()=>{}) as any as Piece;
+			const piece : Piece = ((Piece as any) as InternalPiece).Create(index, size, intersectionPadding, ()=>{}, ()=>{}) as any as Piece;
 		};
 		expect(construction).toThrowWithMessage(RangeError, "Index Y has to be 0 or bigger");
 		index = new Vector2(0, 0);
@@ -37,16 +39,17 @@ describe('Piece', () => {
 	test('CreateCounterInvalidSize', () => {
 		const index : Vector2 = new Vector2(0, 0);
 		let size : Vector2 = new Vector2(50, 50);
+		const intersectionPadding : Vector2 = new Vector2(10, 10);
 
 		size = new Vector2(-1, 1);
 		let construction = () => {
-			const piece : Piece = ((Piece as any) as InternalPiece).Create(index, size, ()=>{}, ()=>{}) as any as Piece;
+			const piece : Piece = ((Piece as any) as InternalPiece).Create(index, size, intersectionPadding, ()=>{}, ()=>{}) as any as Piece;
 		};
 		expect(construction).toThrowWithMessage(RangeError, "Size X has to be bigger than 0");
 
 		size = new Vector2(1, -1);
 		construction = () => {
-			const piece : Piece = ((Piece as any) as InternalPiece).Create(index, size, ()=>{}, ()=>{}) as any as Piece;
+			const piece : Piece = ((Piece as any) as InternalPiece).Create(index, size, intersectionPadding, ()=>{}, ()=>{}) as any as Piece;
 		};
 		expect(construction).toThrowWithMessage(RangeError, "Size Y has to be bigger than 0");
 	});
@@ -54,10 +57,11 @@ describe('Piece', () => {
 	test('CreateCounterCallbacks', () => {
 		const index : Vector2 = new Vector2(0, 0);
 		const size : Vector2 = new Vector2(50, 50);
+		const intersectionPadding : Vector2 = new Vector2(10, 10);
 		const onSelect : any = jest.fn(() => {});
 		const onDeselect : any = jest.fn(() => {});
 
-		const piece : Piece = ((Piece as any) as InternalPiece).Create(index, size, onSelect, onDeselect) as any as Piece;
+		const piece : Piece = ((Piece as any) as InternalPiece).Create(index, size, intersectionPadding, onSelect, onDeselect) as any as Piece;
 		
 		piece.Element.dispatchEvent(new MouseEvent("mousedown", {clientX: 20, clientY: 20, bubbles: true}));
 		expect(onSelect.mock.calls.length).toBe(1);
@@ -72,10 +76,11 @@ describe('Piece', () => {
 	test('MoveBy', () => {
 		const index : Vector2 = new Vector2(0, 0);
 		const size : Vector2 = new Vector2(50, 50);
+		const intersectionPadding : Vector2 = new Vector2(10, 10);
 		const onSelect : any = jest.fn(() => {});
 		const onDeselect : any = jest.fn(() => {});
 
-		const piece : Piece = ((Piece as any) as InternalPiece).Create(index, size, onSelect, onDeselect) as any as Piece;
+		const piece : Piece = ((Piece as any) as InternalPiece).Create(index, size, intersectionPadding, onSelect, onDeselect) as any as Piece;
 
 		expect(piece.getPosition()).toMatchObject({x: 0, y: 0});
 		expect(piece.getPosition()).not.toMatchObject({x: -1, y: -1});
@@ -100,10 +105,11 @@ describe('Piece', () => {
 	test('MoveBy', () => {
 		const index : Vector2 = new Vector2(0, 0);
 		const size : Vector2 = new Vector2(50, 50);
+		const intersectionPadding : Vector2 = new Vector2(10, 10);
 		const onSelect : any = jest.fn(() => {});
 		const onDeselect : any = jest.fn(() => {});
 
-		const piece : Piece = ((Piece as any) as InternalPiece).Create(index, size, onSelect, onDeselect) as any as Piece;
+		const piece : Piece = ((Piece as any) as InternalPiece).Create(index, size, intersectionPadding, onSelect, onDeselect) as any as Piece;
 
 		expect(piece.getPosition()).toMatchObject({x: 0, y: 0});
 		expect(piece.getPosition()).not.toMatchObject({x: -1, y: -1});
@@ -129,10 +135,11 @@ describe('Piece', () => {
 	test('MoveTo', () => {
 		const index : Vector2 = new Vector2(0, 0);
 		const size : Vector2 = new Vector2(50, 50);
+		const intersectionPadding : Vector2 = new Vector2(10, 10);
 		const onSelect : any = jest.fn(() => {});
 		const onDeselect : any = jest.fn(() => {});
 
-		const piece : Piece = ((Piece as any) as InternalPiece).Create(index, size, onSelect, onDeselect) as any as Piece;
+		const piece : Piece = ((Piece as any) as InternalPiece).Create(index, size, intersectionPadding, onSelect, onDeselect) as any as Piece;
 
 		expect(piece.getPosition()).toMatchObject({x: 0, y: 0});
 		expect(piece.getPosition()).not.toMatchObject({x: -1, y: -1});
@@ -157,10 +164,11 @@ describe('Piece', () => {
 	test('Default Neighbors', () => {
 		const index : Vector2 = new Vector2(0, 0);
 		const size : Vector2 = new Vector2(50, 50);
+		const intersectionPadding : Vector2 = new Vector2(10, 10);
 		const onSelect : any = jest.fn(() => {});
 		const onDeselect : any = jest.fn(() => {});
 
-		const piece : Piece = ((Piece as any) as InternalPiece).Create(index, size, onSelect, onDeselect) as any as Piece;
+		const piece : Piece = ((Piece as any) as InternalPiece).Create(index, size, intersectionPadding, onSelect, onDeselect) as any as Piece;
 		NeighborDirection.ForEach((direction : NeighborDirection) =>
 		{
 			expect(piece.hasNeighbor(direction)).toBe(false);
@@ -170,10 +178,11 @@ describe('Piece', () => {
 	test('Neighbors', () => {
 		const index : Vector2 = new Vector2(1, 1);
 		const size : Vector2 = new Vector2(50, 50);
+		const intersectionPadding : Vector2 = new Vector2(10, 10);
 		const onSelect : any = jest.fn(() => {});
 		const onDeselect : any = jest.fn(() => {});
 
-		const piece : Piece = ((Piece as any) as InternalPiece).Create(index, size, onSelect, onDeselect) as any as Piece;
+		const piece : Piece = ((Piece as any) as InternalPiece).Create(index, size, intersectionPadding, onSelect, onDeselect) as any as Piece;
 
 		const spyOnConsoleError = jest.spyOn(console, "error");
 		spyOnConsoleError.mockImplementation(() => {});
@@ -184,7 +193,7 @@ describe('Piece', () => {
 			// Check theres no neighbor...
 			expect(piece.hasNeighbor(direction)).toBe(false);
 			// Create another piece...
-			const neighborPiece : Piece = ((Piece as any) as InternalPiece).Create(Vector2.add(index, direction.Position), size, onSelect, onDeselect) as any as Piece;
+			const neighborPiece : Piece = ((Piece as any) as InternalPiece).Create(Vector2.add(index, direction.Position), intersectionPadding, size, onSelect, onDeselect) as any as Piece;
 			// ...and add it
 			expect(piece.setNeighbor(direction, neighborPiece)).toBe(true);
 
@@ -205,7 +214,7 @@ describe('Piece', () => {
 				neighborPiece.Index);
 
 			// And adding another neighbor will fail
-			const secondNeighborPiece : Piece = ((Piece as any) as InternalPiece).Create(Vector2.add(index, direction.Position), size, onSelect, onDeselect) as any as Piece;
+			const secondNeighborPiece : Piece = ((Piece as any) as InternalPiece).Create(Vector2.add(index, direction.Position), intersectionPadding, size, onSelect, onDeselect) as any as Piece;
 			expect(piece.setNeighbor(direction, secondNeighborPiece)).toBe(false); errorIndex++;
 			expect(spyOnConsoleError).toHaveBeenCalledTimes(errorIndex);
 		});
@@ -215,10 +224,11 @@ describe('Piece', () => {
 	test('Intersection', () => {
 		const index : Vector2 = new Vector2(1, 1);
 		const size : Vector2 = new Vector2(50, 50);
+		const intersectionPadding : Vector2 = new Vector2(10, 10);
 		const onSelect : any = jest.fn(() => {});
 		const onDeselect : any = jest.fn(() => {});
 
-		const piece : Piece = ((Piece as any) as InternalPiece).Create(index, size, onSelect, onDeselect) as any as Piece;
+		const piece : Piece = ((Piece as any) as InternalPiece).Create(index, size, intersectionPadding, onSelect, onDeselect) as any as Piece;
 
 		const spyOnConsoleError = jest.spyOn(console, "error");
 		spyOnConsoleError.mockImplementation(() => {});

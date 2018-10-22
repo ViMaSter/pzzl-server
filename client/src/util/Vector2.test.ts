@@ -14,6 +14,13 @@ describe('Vector2', () => {
 		let n : number;
 		expect(()=>{new Vector2(n, 2)}).toThrowWithMessage(RangeError, "X cannot be undefined");
 		expect(()=>{new Vector2(1, n)}).toThrowWithMessage(RangeError, "Y cannot be undefined");
+
+		/* add this
+		expect(new Vector2()	).
+		expect(new Vector2(0.5)	).
+		expect(new Vector2(0)	).
+		expect(new Vector2(1)	).
+		*/
 	});
 
 	test('fromString', () => {
@@ -24,6 +31,12 @@ describe('Vector2', () => {
 		expect(Vector2.fromString("0,5", "0,6" )	).toMatchObject(		new Vector2(0, 0));
 		expect(Vector2.fromString("1px2", "1px2" )	).toMatchObject(		new Vector2(1, 1));
 		expect(Vector2.fromString("2", "2" )		).not.toMatchObject(	new Vector2(1, 1));
+		/* add this
+		expect(Vector2.fromString()	).
+		expect(Vector2.fromString(0.5)	).
+		expect(Vector2.fromString(0)	).
+		expect(Vector2.fromString(1)	).
+		*/
 	});
 
 	test('toString', () => {
@@ -42,6 +55,12 @@ describe('Vector2', () => {
 
 		expect(Vector2.add(new Vector2(0, 0), new Vector2(-1, -1))	).toMatchObject(		Vector2.add(new Vector2(-1, -1), new Vector2(0, 0)) );
 		expect(Vector2.add(new Vector2(0, 0), new Vector2(-1, -1))	).not.toMatchObject(	Vector2.add(new Vector2(-1, -1), new Vector2(-1, -1)) );
+
+		/* add this
+		expect(Vector2.add(new Vector2(0, 0), 0.5)	).
+		expect(Vector2.add(new Vector2(0, 0), 0)	).
+		expect(Vector2.add(new Vector2(0, 0), 1)	).
+		*/
 	});
 
 	test('subtract', () => {
@@ -50,6 +69,12 @@ describe('Vector2', () => {
 		expect(Vector2.subtract(new Vector2(0, 0), new Vector2(-1, -1))	).toMatchObject(		new Vector2(1, 1) );
 
 		expect(Vector2.subtract(new Vector2(1, 1), new Vector2(0, 0))	).not.toMatchObject(	Vector2.subtract(new Vector2(0, 0), new Vector2(1, 1)) );
+
+		/* add this
+		expect(Vector2.subtract(new Vector2(0, 0), 0.5)	).
+		expect(Vector2.subtract(new Vector2(0, 0), 0)	).
+		expect(Vector2.subtract(new Vector2(0, 0), 1)	).
+		*/
 	});
 
 	test('multiply with Vector2', () => {
@@ -80,6 +105,31 @@ describe('Vector2', () => {
 		expect(Vector2.multiply(new Vector2(1, 1), 1)	).not.toMatchObject(	new Vector2(0, 0) );
 		expect(Vector2.multiply(new Vector2(1, 0), 1)	).not.toMatchObject(	new Vector2(0, 1) );
 		expect(Vector2.multiply(new Vector2(0, 1), 1)	).not.toMatchObject(	new Vector2(1, 0) );
+	});
+
+	test('divide with Vector2', () => {
+		expect(Vector2.divide(new Vector2(2, 2), new Vector2(2, 2))	).toMatchObject(	new Vector2(1, 1) );
+		expect(Vector2.divide(new Vector2(2, 0), new Vector2(2, 2))	).toMatchObject(	new Vector2(1, 0 ) );
+		expect(Vector2.divide(new Vector2(0, 2), new Vector2(2, 2))	).toMatchObject(	new Vector2(0, 1) );
+
+		expect(Vector2.divide(new Vector2(2, 2), new Vector2(2, 2))	).not.toMatchObject(	new Vector2(2, 2) );
+		expect(Vector2.divide(new Vector2(2, 0), new Vector2(2, 2))	).not.toMatchObject(	new Vector2(2, Infinity) );
+		expect(Vector2.divide(new Vector2(0, 2), new Vector2(2, 2))	).not.toMatchObject(	new Vector2(Infinity, 2) );
+
+		expect(Vector2.divide(new Vector2(2, 0), new Vector2(2, 2))	).not.toMatchObject(	Vector2.divide(new Vector2(2, 2),  new Vector2(2, 0)) );
+		expect(Vector2.divide(new Vector2(0, 2), new Vector2(2, 2))	).not.toMatchObject(	Vector2.divide(new Vector2(2, 2),  new Vector2(0, 2)) );
+	});
+
+	test('divide with number', () => {
+		expect(Vector2.divide(new Vector2(2, 2), 0)	).toMatchObject(	new Vector2(Infinity, Infinity) );
+		expect(Vector2.divide(new Vector2(2, 2), 2)	).toMatchObject(	new Vector2(1, 1) );
+		expect(Vector2.divide(new Vector2(2, 0), 2)	).toMatchObject(	new Vector2(1, 0) );
+		expect(Vector2.divide(new Vector2(0, 2), 2)	).toMatchObject(	new Vector2(0, 1) );
+
+		expect(Vector2.divide(new Vector2(2, 2), 0)	).not.toMatchObject(	new Vector2(1, 1) );
+		expect(Vector2.divide(new Vector2(2, 2), 2)	).not.toMatchObject(	new Vector2(2, 2) );
+		expect(Vector2.divide(new Vector2(2, 0), 2)	).not.toMatchObject(	new Vector2(0, 1) );
+		expect(Vector2.divide(new Vector2(0, 2), 2)	).not.toMatchObject(	new Vector2(1, 0) );
 	});
 
 	test('delta', () => {

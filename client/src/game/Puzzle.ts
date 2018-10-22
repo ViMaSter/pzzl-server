@@ -35,15 +35,14 @@ export class Puzzle
 	private pieces : PuzzlePiece.PieceGrid;
 	private activePiece : PuzzlePiece.Piece | null = null;
 
+	private imageElement : HTMLImageElement;
+
 	private listener : MouseListener;
 
-	private snapThresholdInPx : number;
-	get SnapThresholdInPx() : number { return this.snapThresholdInPx; }
+	static get SnapThresholdInPx() : number { return 10; }
 
-	constructor(rootElement : HTMLElement, image : HTMLImageElement, dimensions : Vector2)
+	constructor(rootElement : HTMLElement, image : HTMLImageElement, dimensions : Vector2, pieceSize : Vector2 = new Vector2(-1, -1), intersectionPadding : Vector2 = new Vector2(-1, -1))
 	{
-		this.snapThresholdInPx = 10;
-		
 		if (rootElement == null)
 		{
 			throw new ReferenceError("rootElement is an invalid element");
@@ -56,17 +55,30 @@ export class Puzzle
 		}
 		this.playingField = this.rootElement.querySelector("#playingfield") as HTMLElement;
 
-		this.listener = new MouseListener();
-
-		this.pieces = new PuzzlePiece.PieceGrid(dimensions, new Vector2(50, 50), this.onSelectItem.bind(this), this.onDeselectItem.bind(this));
-
-		this.GenerateGrid();
-
 		if (image == null)
 		{
 			throw new ReferenceError("No valid image-element was supplied");
 		}
-		this.DrawImage(image);
+		this.imageElement = image;
+
+		const playingFieldDimensions : ClientRect = this.playingField.getBoundingClientRect() as ClientRect;
+		if (pieceSize.x == -1 || pieceSize.y == -1)
+		{
+			pieceSize = Vector2.divide(new Vector2((playingFieldDimensions.width*0.9) - Puzzle.SnapThresholdInPx*2, (playingFieldDimensions.height*0.9) - Puzzle.SnapThresholdInPx*2), dimensions);
+			pieceSize = new Vector2(Math.round(pieceSize.x), Math.round(pieceSize.y));
+		}
+		if (intersectionPadding.x == -1 || intersectionPadding.y == -1)
+		{
+			intersectionPadding = Vector2.divide(pieceSize, 10);
+			intersectionPadding = new Vector2(Math.round(intersectionPadding.x), Math.round(intersectionPadding.y));
+		}
+
+		this.listener = new MouseListener();
+
+		this.pieces = new PuzzlePiece.PieceGrid(dimensions, pieceSize, intersectionPadding, this.onSelectItem.bind(this), this.onDeselectItem.bind(this));
+
+		this.GenerateGrid();
+		this.DrawImage();
 
 		this.ShufflePieces();
 
@@ -86,14 +98,9 @@ export class Puzzle
 		const pieceAmount : number = this.pieces.Dimensions.x * this.pieces.Dimensions.y;
 		let passedElements : number = 0;
 		let passedHalf : boolean = false;
-		if (Number.isNaN((this.rootElement.getBoundingClientRect() as ClientRect).width))
-		{
-			console.trace();
-			console.log(this.rootElement.innerHTML);
-		}
 		const availableSlots : Vector2 = new Vector2(
-			Math.floor((this.rootElement.getBoundingClientRect() as ClientRect).width / (this.pieces.PieceSize.x + this.snapThresholdInPx*2)),
-			Math.floor((this.rootElement.getBoundingClientRect() as ClientRect).height / (this.pieces.PieceSize.y + this.snapThresholdInPx*2))
+			Math.floor((this.rootElement.getBoundingClientRect() as ClientRect).width / (this.pieces.PieceSize.x + Puzzle.SnapThresholdInPx * 2)),
+			Math.floor((this.rootElement.getBoundingClientRect() as ClientRect).height / (this.pieces.PieceSize.y + Puzzle.SnapThresholdInPx * 2))
 		);
 		let currentSlot : Vector2 = new Vector2(0, 0);
 
@@ -110,12 +117,15 @@ export class Puzzle
 					break;
 				}
 
+				const marginVector : Vector2 = new Vector2(Puzzle.SnapThresholdInPx, Puzzle.SnapThresholdInPx);
+
 				const item = this.pieces.item(position);
-				let moveToPosition = Vector2.multiply(currentSlot, Vector2.add(this.pieces.PieceSize, new Vector2(this.snapThresholdInPx, this.snapThresholdInPx)));
-				moveToPosition = Vector2.add(moveToPosition, new Vector2(this.snapThresholdInPx, this.snapThresholdInPx));
+				let moveToPosition = Vector2.multiply(currentSlot, Vector2.add(item.SizeWithPadding, marginVector));
+				moveToPosition = Vector2.add(moveToPosition, marginVector);
+				console.groupEnd()
 				if (passedHalf)
 				{
-					moveToPosition.x = (this.rootElement.getBoundingClientRect() as ClientRect).width - (moveToPosition.x + this.pieces.PieceSize.x);
+					moveToPosition.x = (this.rootElement.getBoundingClientRect() as ClientRect).width - (moveToPosition.x + item.SizeWithPadding.x);
 				}
 				moveToPosition.x -= ((this.rootElement.getBoundingClientRect() as ClientRect).width - (this.playingField.getBoundingClientRect() as ClientRect).width) / 2
 				item.moveTo(moveToPosition);
@@ -138,7 +148,15 @@ export class Puzzle
 		}
 	}
 
-	private DrawImage(imageElement : HTMLImageElement)
+	private IntoImageSpace(offset : Vector2, piece : PuzzlePiece.Piece) : Vector2
+	{
+		return new Vector2(
+			offset.x / ((piece.Size.x * this.pieces.Dimensions.x) - (piece.IntersectionPadding.x/2)) * this.imageElement.naturalWidth,
+			offset.y / ((piece.Size.y * this.pieces.Dimensions.y) - (piece.IntersectionPadding.y/2)) * this.imageElement.naturalHeight
+		)
+	}
+
+	private DrawImage()
 	{
 		for (let x : number = 0; x < this.pieces.Dimensions.x; x++)
 		{
@@ -153,14 +171,24 @@ export class Puzzle
 				const item = this.pieces.item(position);
 				const context : CanvasRenderingContext2D = <CanvasRenderingContext2D>item.Element.getContext("2d");
 				context.globalAlpha = 0.4;
+
+				// // Create a circle
+				// context.beginPath();
+				// context.arc(item.Size.x/2, item.Size.y/2, 10, 0, Math.PI * 2, false);
+
+				// // Clip to the current path
+				// context.clip();
+
 				context.drawImage(
-					imageElement,
-					imageElement.naturalWidth / this.pieces.Dimensions.x * x,
-					imageElement.naturalHeight / this.pieces.Dimensions.y * y,
-					imageElement.naturalWidth / this.pieces.Dimensions.x,
-					imageElement.naturalHeight / this.pieces.Dimensions.y,
-					0, 0,
-					item.Size.x, item.Size.y
+					this.imageElement,
+					(this.imageElement.naturalWidth / this.pieces.Dimensions.x * x) - this.IntoImageSpace(item.IntersectionPadding, item).x,
+					(this.imageElement.naturalHeight / this.pieces.Dimensions.y * y) - this.IntoImageSpace(item.IntersectionPadding, item).y,
+					(this.imageElement.naturalWidth / this.pieces.Dimensions.x) + this.IntoImageSpace(Vector2.multiply(item.IntersectionPadding, 2), item).x,
+					(this.imageElement.naturalHeight / this.pieces.Dimensions.y) + this.IntoImageSpace(Vector2.multiply(item.IntersectionPadding, 2), item).y,
+					0,
+					0,
+					item.SizeWithPadding.x,
+					item.SizeWithPadding.y
 				);
 			}
 		}
@@ -210,7 +238,14 @@ export class Puzzle
 		this.forEachConnectedPiece(this.activePiece, (connection : PuzzlePieceConnection) =>
 		{
 			// ...take the source piece this piece is a neighbor of (and in which direction) and offset this piece accordingly
-			connection.AffectedPiece.moveTo(Vector2.add(connection.SourcePiece.getPosition(), Vector2.multiply(connection.Direction.Position, 50)));
+			//const relativeOverlap : Vector2 = this.IntoImageSpace(connection.AffectedPiece.IntersectionPadding, connection.AffectedPiece);
+			const relativeOverlap : Vector2 = connection.AffectedPiece.IntersectionPadding;
+			const offset : number = connection.Direction == PuzzlePiece.NeighborDirection.Up || connection.Direction == PuzzlePiece.NeighborDirection.Down ?
+				connection.AffectedPiece.Size.y - (relativeOverlap.y*0): 
+				connection.AffectedPiece.Size.x - (relativeOverlap.x*0);
+			
+
+			connection.AffectedPiece.moveTo(Vector2.add(connection.SourcePiece.getPosition(), Vector2.multiply(connection.Direction.Position, offset)));
 			this.fixScreenBorderPosition(connection.AffectedPiece);
 		});
 
@@ -229,7 +264,14 @@ export class Puzzle
 		this.forEachConnectedPiece(this.activePiece, (connection : PuzzlePieceConnection) =>
 		{
 			// ...take the source piece this piece is a neighbor of (and in which direction) and offset this piece accordingly
-			connection.AffectedPiece.moveTo(Vector2.add(connection.SourcePiece.getPosition(), Vector2.multiply(connection.Direction.Position, 50)));
+			//const relativeOverlap : Vector2 = this.IntoImageSpace(connection.AffectedPiece.IntersectionPadding, connection.AffectedPiece);
+			const relativeOverlap : Vector2 = connection.AffectedPiece.IntersectionPadding;
+			const offset : number = connection.Direction == PuzzlePiece.NeighborDirection.Up || connection.Direction == PuzzlePiece.NeighborDirection.Down ?
+				connection.AffectedPiece.Size.y - (relativeOverlap.y*0): 
+				connection.AffectedPiece.Size.x - (relativeOverlap.x*0);
+			
+
+			connection.AffectedPiece.moveTo(Vector2.add(connection.SourcePiece.getPosition(), Vector2.multiply(connection.Direction.Position, offset)));
 		});
 	}
 
@@ -239,10 +281,10 @@ export class Puzzle
 		const droppedRect : ClientRect = droppedPiece.Element.getBoundingClientRect() as ClientRect;
 		const collidingRect : ClientRect = collider.Element.getBoundingClientRect() as ClientRect;
 
-		let leftInBounds : 		boolean = droppedRect.left >		(collidingRect.left - 	this.snapThresholdInPx) && droppedRect.left < 		(collidingRect.right + 		this.snapThresholdInPx);
-		let rightInBounds : 	boolean = droppedRect.right <		(collidingRect.right + 	this.snapThresholdInPx) && droppedRect.right > 		(collidingRect.left - 		this.snapThresholdInPx);
-		let bottomInBounds : 	boolean = droppedRect.bottom <		(collidingRect.bottom +	this.snapThresholdInPx) && droppedRect.bottom > 	(collidingRect.top -		this.snapThresholdInPx);
-		let topInBounds : 		boolean = droppedRect.top >			(collidingRect.top -	this.snapThresholdInPx) && droppedRect.top < 		(collidingRect.bottom + 	this.snapThresholdInPx);
+		let leftInBounds : 		boolean = droppedRect.left >		(collidingRect.left - 	Puzzle.SnapThresholdInPx) && droppedRect.left < 		(collidingRect.right + 		Puzzle.SnapThresholdInPx);
+		let rightInBounds : 	boolean = droppedRect.right <		(collidingRect.right + 	Puzzle.SnapThresholdInPx) && droppedRect.right > 		(collidingRect.left - 		Puzzle.SnapThresholdInPx);
+		let bottomInBounds : 	boolean = droppedRect.bottom <		(collidingRect.bottom +	Puzzle.SnapThresholdInPx) && droppedRect.bottom > 	(collidingRect.top -		Puzzle.SnapThresholdInPx);
+		let topInBounds : 		boolean = droppedRect.top >			(collidingRect.top -	Puzzle.SnapThresholdInPx) && droppedRect.top < 		(collidingRect.bottom + 	Puzzle.SnapThresholdInPx);
 
 		if (leftInBounds && rightInBounds && !topInBounds && bottomInBounds)
 		{
@@ -283,7 +325,7 @@ export class Puzzle
 				}
 
 				const item = this.pieces.item(position);
-				if (Rect.OverlapsWithBuffer(currentRect, item.Element.getBoundingClientRect() as DOMRect, this.snapThresholdInPx))
+				if (Rect.OverlapsWithBuffer(currentRect, item.Element.getBoundingClientRect() as DOMRect, Puzzle.SnapThresholdInPx))
 				{
 					overlaps.push(item);
 				}
@@ -321,19 +363,19 @@ export class Puzzle
 		let overlap : Vector2 = new Vector2(0, 0);
 		if (pieceBounds.left < boardBounds.left)
 		{
-			overlap.x += boardBounds.left - pieceBounds.left + this.snapThresholdInPx;
+			overlap.x += boardBounds.left - pieceBounds.left + Puzzle.SnapThresholdInPx;
 		}
 		if (pieceBounds.right > boardBounds.right)
 		{
-			overlap.x -= pieceBounds.right - boardBounds.right + this.snapThresholdInPx;
+			overlap.x -= pieceBounds.right - boardBounds.right + Puzzle.SnapThresholdInPx;
 		}
 		if (pieceBounds.top < boardBounds.top)
 		{
-			overlap.y += boardBounds.top - pieceBounds.top + this.snapThresholdInPx;
+			overlap.y += boardBounds.top - pieceBounds.top + Puzzle.SnapThresholdInPx;
 		}
 		if (pieceBounds.bottom > boardBounds.bottom)
 		{
-			overlap.y -= pieceBounds.bottom - boardBounds.bottom + this.snapThresholdInPx;
+			overlap.y -= pieceBounds.bottom - boardBounds.bottom + Puzzle.SnapThresholdInPx;
 		}
 
 		piece.moveBy(overlap);
@@ -342,7 +384,14 @@ export class Puzzle
 			this.forEachConnectedPiece(piece, (connection : PuzzlePieceConnection) =>
 			{
 				// ...take the source piece this piece is a neighbor of (and in which direction) and offset this piece accordingly
-				connection.AffectedPiece.moveTo(Vector2.add(connection.SourcePiece.getPosition(), Vector2.multiply(connection.Direction.Position, 50)));
+				//const relativeOverlap : Vector2 = this.IntoImageSpace(connection.AffectedPiece.IntersectionPadding, connection.AffectedPiece);
+				const relativeOverlap : Vector2 = connection.AffectedPiece.IntersectionPadding;
+				const offset : number = connection.Direction == PuzzlePiece.NeighborDirection.Up || connection.Direction == PuzzlePiece.NeighborDirection.Down ?
+					connection.AffectedPiece.Size.y - (relativeOverlap.y*0): 
+					connection.AffectedPiece.Size.x - (relativeOverlap.x*0);
+				
+
+				connection.AffectedPiece.moveTo(Vector2.add(connection.SourcePiece.getPosition(), Vector2.multiply(connection.Direction.Position, offset)));
 				this.fixScreenBorderPosition(connection.AffectedPiece);
 			});
 		}

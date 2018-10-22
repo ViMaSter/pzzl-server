@@ -97,9 +97,12 @@ export class Piece
 	private element : HTMLCanvasElement;
 	private index : Vector2 = new Vector2(-1, -1);
 	private size : Vector2 = new Vector2(-1, -1);
+	private intersectionPadding : Vector2 = new Vector2(-1, -1);
 	get Element() : HTMLCanvasElement { return this.element; }
 	get Index() : Vector2 { return this.index; }
 	get Size() : Vector2 { return this.size; }
+	get SizeWithPadding() : Vector2 { return Vector2.add(this.Size, Vector2.multiply(this.IntersectionPadding, 2)); }
+	get IntersectionPadding() : Vector2 { return this.intersectionPadding; }
 
 	private neighbors : Map<string, Piece> = new Map<string, Piece>();
 	hasNeighbor(direction : NeighborDirection) : boolean
@@ -141,7 +144,7 @@ export class Piece
 	{
 		this.element = document.createElement("canvas");
 	}
-	protected static Create(index : Vector2, size : Vector2, onSelect : ToggleItemCallback, onDeselect : ToggleItemCallback) : Piece
+	protected static Create(index : Vector2, size : Vector2, intersectionPadding : Vector2, onSelect : ToggleItemCallback, onDeselect : ToggleItemCallback) : Piece
 	{
 		if (index.x < 0)
 		{
@@ -159,22 +162,33 @@ export class Piece
 		{
 			throw new RangeError("Size Y has to be bigger than 0");
 		}
+		if (intersectionPadding.x < 0)
+		{
+			throw new RangeError("Intersection padding X has to be 0 or bigger");
+		}
+		if (intersectionPadding.y < 0)
+		{
+			throw new RangeError("Intersection padding Y has to be 0 or bigger");
+		}
 
 		let newPiece : Piece = new Piece();
+
 		newPiece.index = index;
 		newPiece.size = size;
+		newPiece.intersectionPadding = intersectionPadding;
+
 		newPiece.Element.classList.add("piece");	
 		newPiece.Element.dataset.x = index.x + "";
 		newPiece.Element.dataset.y = index.y + "";
 		newPiece.Element.style.position = "absolute";
-		newPiece.Element.style.width = size.x + "px";
-		newPiece.Element.style.height = size.y + "px";
+		newPiece.Element.style.width = (newPiece.SizeWithPadding.x) + "px";
+		newPiece.Element.style.height = (newPiece.SizeWithPadding.y) + "px";
 		newPiece.Element.style.top = "0px";
 		newPiece.Element.style.left = "0px";
 
-		// required for canvas scaling
-		newPiece.Element.width = size.x;
-		newPiece.Element.height = size.y;
+		// required for proper canvas scaling
+		newPiece.Element.width = newPiece.SizeWithPadding.x;
+		newPiece.Element.height = newPiece.SizeWithPadding.y;
 
 		newPiece.Element.addEventListener(	"touchstart",	()=>{onSelect(newPiece)}	);
 		newPiece.Element.addEventListener(	"mousedown",	()=>{onSelect(newPiece)}	);
@@ -247,8 +261,11 @@ export class PieceGrid
 	get Dimensions() : Vector2 { return this.dimensions; }
 	private pieceSize : Vector2;
 	get PieceSize() : Vector2 { return this.pieceSize; }
+	get PieceSizeWithPadding() : Vector2 { return Vector2.add(this.PieceSize, Vector2.multiply(this.IntersectionPadding, 2)); }
+	private intersectionPadding : Vector2;
+	get IntersectionPadding() : Vector2 { return this.intersectionPadding; }
 	
-	constructor(dimensions : Vector2, pieceSize : Vector2, onSelect : ToggleItemCallback, onDeselect : ToggleItemCallback)
+	constructor(dimensions : Vector2, pieceSize : Vector2, intersectionPadding : Vector2, onSelect : ToggleItemCallback, onDeselect : ToggleItemCallback)
 	{
 		if (dimensions.x <= 0)
 		{
@@ -266,9 +283,19 @@ export class PieceGrid
 		{
 			throw new RangeError("PieceSize Y has to be bigger than 0");
 		}
+		if (intersectionPadding.x < 0)
+		{
+			throw new RangeError("Intersection padding X has to be 0 or bigger");
+		}
+		if (intersectionPadding.y < 0)
+		{
+			throw new RangeError("Intersection padding Y has to be 0 or bigger");
+		}
 
 		this.dimensions = dimensions;
 		this.pieceSize = pieceSize;
+		this.intersectionPadding = Vector2.divide(intersectionPadding, 4);
+		this.intersectionPadding = new Vector2(Math.round(this.intersectionPadding.x), Math.round(this.intersectionPadding.y));
 		for (let x : number = 0; x < this.dimensions.x; x++)
 		{
 			this.data[x] = [];
@@ -277,7 +304,7 @@ export class PieceGrid
 				const index = new Vector2(x, y);
 
 				// Create new piece
-				this.data[x][y] = ((((Piece as any) as InternalPiece)).Create(index, pieceSize, onSelect, onDeselect) as any) as Piece;
+				this.data[x][y] = ((((Piece as any) as InternalPiece)).Create(index, pieceSize, this.intersectionPadding, onSelect, onDeselect) as any) as Piece;
 
 				// Create intersections...
 				NeighborDirection.ForEach((direction : NeighborDirection) =>

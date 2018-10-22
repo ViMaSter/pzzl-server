@@ -70,6 +70,25 @@ export class Vector2
 		console.error("Vector2.multiply used with not supported factor-argument");
 		return new Vector2(0, 0);	
 	}
+	static divide(posA : Vector2, factor : number|Vector2) : Vector2
+	{
+		if (typeof factor == "number")
+		{
+			return new Vector2(
+				posA.x / (factor as number),
+				posA.y / (factor as number)
+			);
+		}
+		if (factor instanceof Vector2)
+		{
+			return new Vector2(
+				posA.x / (factor as Vector2).x,
+				posA.y / (factor as Vector2).y
+			);
+		}
+		console.error("Vector2.multiply used with not supported factor-argument");
+		return new Vector2(0, 0);	
+	}
 	static delta(posA : Vector2, posB : Vector2) : Vector2
 	{
 		return new Vector2(
