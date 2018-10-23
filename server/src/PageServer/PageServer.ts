@@ -1,8 +1,8 @@
-import http = require('http');
-import fs = require('fs');
-import path = require('path');
+import * as http from 'http';
+import * as path from 'path';
+import * as fs from 'fs';
 
-class WebClientServer
+export class PageServer
 {
 	httpServer : http.Server;
 	constructor(port : number, rootFolder : string)
@@ -42,12 +42,12 @@ class WebClientServer
 						break;
 				}
 
-				console.log(`Handling request for ${filePath}...`);
+				console.log(`[PageServer] Handling request for ${filePath}...`);
 
 				fs.readFile(filePath, function(error : Error, content : Buffer) {
 					if (error)
 					{
-						console.group("Couldn't handle request");
+						console.group("[PageServer] Couldn't handle request");
 						console.error(error);
 						console.groupEnd();
 						fs.readFile(rootFolder + '/index.html', function(error : Error, content : Buffer) {
@@ -55,7 +55,7 @@ class WebClientServer
 							{
 								response.writeHead(500);
 								response.end('500');
-								console.group("Couldn't return index.html as response to error handling");
+								console.group("[PageServer] Couldn't return index.html as response to error handling");
 								console.error(error);
 								console.groupEnd();
 								response.end(); 
@@ -72,9 +72,6 @@ class WebClientServer
 				});
 			});
 		}).listen(port);
-		console.log(`[WEB] Listening on port ${port}...`);
+		console.log(`[PageServer] [WEB] Listening on port ${port}...`);
 	}
 }
-
-const webClientServer : WebClientServer = new WebClientServer(parseInt(process.env.PORT || "") || 7995, "html");
-

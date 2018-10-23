@@ -1,2 +1,2 @@
 cls
-call node lib/index.js
+call node bin/server.js
