@@ -148,14 +148,6 @@ export class Puzzle
 		}
 	}
 
-	private IntoImageSpace(offset : Vector2, piece : PuzzlePiece.Piece) : Vector2
-	{
-		return new Vector2(
-			offset.x / ((piece.Size.x * this.pieces.Dimensions.x) - (piece.IntersectionPadding.x/2)) * this.imageElement.naturalWidth,
-			offset.y / ((piece.Size.y * this.pieces.Dimensions.y) - (piece.IntersectionPadding.y/2)) * this.imageElement.naturalHeight
-		)
-	}
-
 	private DrawImage()
 	{
 		for (let x : number = 0; x < this.pieces.Dimensions.x; x++)
@@ -170,26 +162,8 @@ export class Puzzle
 
 				const item = this.pieces.item(position);
 				const context : CanvasRenderingContext2D = <CanvasRenderingContext2D>item.Element.getContext("2d");
-				context.globalAlpha = 0.4;
 
-				// // Create a circle
-				// context.beginPath();
-				// context.arc(item.Size.x/2, item.Size.y/2, 10, 0, Math.PI * 2, false);
-
-				// // Clip to the current path
-				// context.clip();
-
-				context.drawImage(
-					this.imageElement,
-					(this.imageElement.naturalWidth / this.pieces.Dimensions.x * x) - this.IntoImageSpace(item.IntersectionPadding, item).x,
-					(this.imageElement.naturalHeight / this.pieces.Dimensions.y * y) - this.IntoImageSpace(item.IntersectionPadding, item).y,
-					(this.imageElement.naturalWidth / this.pieces.Dimensions.x) + this.IntoImageSpace(Vector2.multiply(item.IntersectionPadding, 2), item).x,
-					(this.imageElement.naturalHeight / this.pieces.Dimensions.y) + this.IntoImageSpace(Vector2.multiply(item.IntersectionPadding, 2), item).y,
-					0,
-					0,
-					item.SizeWithPadding.x,
-					item.SizeWithPadding.y
-				);
+				item.Render(this.imageElement, this.pieces.Dimensions);
 			}
 		}
 	}

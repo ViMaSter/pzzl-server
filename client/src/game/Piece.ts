@@ -95,6 +95,7 @@ export class IntersectionDescription
 export class Piece
 {
 	private element : HTMLCanvasElement;
+	private twoDContext : CanvasRenderingContext2D;
 	private index : Vector2 = new Vector2(-1, -1);
 	private size : Vector2 = new Vector2(-1, -1);
 	private intersectionPadding : Vector2 = new Vector2(-1, -1);
@@ -143,7 +144,47 @@ export class Piece
 	private constructor()
 	{
 		this.element = document.createElement("canvas");
+		this.twoDContext = <CanvasRenderingContext2D>this.Element.getContext("2d");
 	}
+
+	private IntoImageSpace(coordsToConvert : Vector2, imageElement : HTMLImageElement, puzzlePieceDimensions : Vector2) : Vector2
+	{
+		return new Vector2(
+			coordsToConvert.x / ((this.Size.x * puzzlePieceDimensions.x) - (this.IntersectionPadding.x/2)) * imageElement.naturalWidth,
+			coordsToConvert.y / ((this.Size.y * puzzlePieceDimensions.y) - (this.IntersectionPadding.y/2)) * imageElement.naturalHeight
+		)
+	}
+	
+	Render(imageElement : HTMLImageElement, puzzlePieceDimensions : Vector2)
+	{
+		this.twoDContext.globalAlpha = 0.4;
+
+		const intersectionPaddingInImageSpace = this.IntoImageSpace(this.IntersectionPadding, imageElement, puzzlePieceDimensions);
+
+		let sourcePosition : Vector2 = new Vector2(imageElement.naturalWidth, imageElement.naturalHeight);
+		sourcePosition = Vector2.divide(sourcePosition, puzzlePieceDimensions);
+		sourcePosition = Vector2.multiply(sourcePosition, this.Index);
+		sourcePosition = Vector2.subtract(sourcePosition, intersectionPaddingInImageSpace);
+		
+		let destinationPosition : Vector2 = new Vector2(imageElement.naturalWidth, imageElement.naturalHeight);
+		destinationPosition = Vector2.divide(destinationPosition, puzzlePieceDimensions);
+		destinationPosition = Vector2.add(destinationPosition, Vector2.multiply(intersectionPaddingInImageSpace, 2));
+
+		this.twoDContext.drawImage(
+			imageElement,
+			sourcePosition.x,
+			sourcePosition.y,
+			destinationPosition.x,
+			destinationPosition.y,
+			0,
+			0,
+			this.SizeWithPadding.x,
+			this.SizeWithPadding.y
+		);
+
+		this.twoDContext.globalAlpha = 1.0;
+	}
+	
 	protected static Create(index : Vector2, size : Vector2, intersectionPadding : Vector2, onSelect : ToggleItemCallback, onDeselect : ToggleItemCallback) : Piece
 	{
 		if (index.x < 0)

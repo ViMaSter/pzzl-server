@@ -15,6 +15,7 @@ describe('Piece', () => {
 		
 		expect(Vector2.equal(piece.Index, index)).toBe(true);
 		expect(Vector2.equal(piece.Size, size)).toBe(true);
+		expect((piece as any).twoDContext.canvas).toMatchObject(<CanvasRenderingContext2D>(piece as any).element.getContext("2d").canvas);
 	});
 
 	test('CreateCounterInvalidIndex', () => {
