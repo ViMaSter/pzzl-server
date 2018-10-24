@@ -155,6 +155,90 @@ export class Piece
 		)
 	}
 	
+	private AddPoint(position : Vector2)
+	{
+		this.twoDContext.lineTo(position.x, position.y);
+	}
+	
+	RelativeToIntersectionPadding(relativePoint : Vector2, direction : NeighborDirection) : Vector2
+	{
+		relativePoint.x += 0.5;
+		if (direction.Name == "Up")
+		{
+			return Vector2.add(
+				Vector2.multiply(
+					relativePoint,
+					new Vector2(this.SizeWithPadding.x, -this.IntersectionPadding.y)
+				),
+				new Vector2(0, this.IntersectionPadding.y)
+			);
+		}
+		console.error("Not yet supported");
+		return new Vector2(0, 0);
+	}
+	
+	FinishRemainingLines(from : Vector2, direction : NeighborDirection)
+	{
+		if (direction.Name == "Up")
+		{
+			const points = [
+				this.RelativeToIntersectionPadding( new Vector2(0.5, 0), direction ),
+				this.RelativeToIntersectionPadding( new Vector2(0.5, 1), direction ),
+				this.RelativeToIntersectionPadding( new Vector2(-0.5, 1), direction ),
+				this.RelativeToIntersectionPadding( new Vector2(-0.5, 0), direction )
+			];
+
+			for (let i : number = 0; i < points.length; i++)
+			{
+				this.AddPoint(points[i]);
+			}
+		}
+	}
+	
+	ClipDirection(direction : NeighborDirection)
+	{
+		const description = this.getIntersection(direction);
+		if (direction.Name == "Up")
+		{
+			this.twoDContext.beginPath(); 
+			let start = Vector2.multiply(new Vector2(0, 0), this.SizeWithPadding);
+			start = Vector2.add(start, new Vector2(0, this.IntersectionPadding.y));
+
+			let end = Vector2.multiply(new Vector2(1, 0), this.SizeWithPadding);
+			end = Vector2.add(end, new Vector2(0, this.IntersectionPadding.y));
+
+			if (description.Shape == Shape.Triangle)
+			{
+				let shapePoints = [];
+				shapePoints.push(this.RelativeToIntersectionPadding( new Vector2(-description.Size.x / 2, 0), direction ));
+				shapePoints.push(this.RelativeToIntersectionPadding( new Vector2(0, description.Size.y)     , direction ));
+				shapePoints.push(this.RelativeToIntersectionPadding( new Vector2(description.Size.x / 2, 0) , direction ));
+				this.AddPoint(start);
+				this.AddPoint(shapePoints[0]);
+				for (let i : number = 0; i < shapePoints.length; i++)
+				{
+					this.AddPoint(shapePoints[i]);
+				}
+				this.AddPoint(end);
+
+				this.FinishRemainingLines(end, direction);
+
+				this.twoDContext.globalCompositeOperation = "destination-out";
+				this.twoDContext.fillStyle = 'black';
+				this.twoDContext.fill();
+			}
+			else
+			{
+				console.error("Shape not yet supported");
+			}
+		}
+	}
+	
+	Clip()
+	{
+		NeighborDirection.ForEach(this.ClipDirection.bind(this));
+	}
+	
 	Render(imageElement : HTMLImageElement, puzzlePieceDimensions : Vector2)
 	{
 		this.twoDContext.globalAlpha = 0.4;
