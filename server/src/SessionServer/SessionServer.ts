@@ -28,7 +28,7 @@ class Session<SessionData> {
 		this.connectedPlayerIDs.push(playerID);
 		if (this.connectedPlayerIDs.indexOf(playerID) > -1)
 		{
-			console.error(`[PageServer] Player ${playerID} is already part of session ${this.id} (current players: ${this.connectedPlayerIDs.join(', ')})`);
+			console.error(`[SessionServer] Player ${playerID} is already part of session ${this.id} (current players: ${this.connectedPlayerIDs.join(', ')})`);
 			return false;
 		}
 		return true;
@@ -38,7 +38,7 @@ class Session<SessionData> {
 	{
 		if (this.connectedPlayerIDs.indexOf(playerID) <= -1)
 		{
-			console.error(`[PageServer] Player ${playerID} is not part of session ${this.id} (current players: ${this.connectedPlayerIDs.join(', ')})`);
+			console.error(`[SessionServer] Player ${playerID} is not part of session ${this.id} (current players: ${this.connectedPlayerIDs.join(', ')})`);
 			return false;
 		}
 		this.connectedPlayerIDs.remove(playerID);
@@ -83,11 +83,11 @@ export class SessionServer<SessionData>
 			this.sessions[newSessionID] = new Session(newSessionID, jsonMessage.mapName);
 			if (this.sessions[newSessionID].addPlayerByID(playerID))
 			{
-				console.error(`[PageServer] Unable to add player ${playerID} to newly created session ${newSessionID}`);
+				console.error(`[SessionServer] Unable to add player ${playerID} to newly created session ${newSessionID}`);
 				return;
 			}
 
-			console.log(`[PageServer] Created new session with ID ${newSessionID}`);
+			console.log(`[SessionServer] Created new session with ID ${newSessionID}`);
 
 			this.sendMessageToPlayer(playerID, JSON.stringify({
 				"command": "sessionJoin",
@@ -98,10 +98,10 @@ export class SessionServer<SessionData>
 
 		this.commands["joinSession"] = (playerID : number, jsonMessage : any) =>
 		{
-			console.log(`[PageServer] Player ${playerID} attempting to join session ${jsonMessage.sessionID}`);
+			console.log(`[SessionServer] Player ${playerID} attempting to join session ${jsonMessage.sessionID}`);
 			if (jsonMessage.sessionID < -1)
 			{
-				console.log("[PageServer] Invalid session id");
+				console.log("[SessionServer] Invalid session id");
 				return {"sessionID": -1};
 			}
 
@@ -113,7 +113,7 @@ export class SessionServer<SessionData>
 
 			if (!this.sessions[jsonMessage.sessionID])
 			{
-				console.log(`[PageServer] Session ${jsonMessage.sessionID} (no longer) doesn't exist`);
+				console.log(`[SessionServer] Session ${jsonMessage.sessionID} (no longer) doesn't exist`);
 				return {"sessionID": -1};
 			}
 
@@ -130,14 +130,14 @@ export class SessionServer<SessionData>
 		{
 			if (typeof jsonMessage.sessionID != "number")
 			{
-				console.error(`[PageServer] leaveSession requires a 'sessionID'-parameter as number! (supplied: ${jsonMessage.sessionID} [${typeof jsonMessage.sessionID}])`);
+				console.error(`[SessionServer] leaveSession requires a 'sessionID'-parameter as number! (supplied: ${jsonMessage.sessionID} [${typeof jsonMessage.sessionID}])`);
 				return;
 			}
 			this.sessions[jsonMessage.sessionID].removePlayerByID(playerID);
-			console.log(`[PageServer] Players left in session ${jsonMessage.sessionID}: ${this.sessions[jsonMessage.sessionID].CurrentPlayerCount}`);
+			console.log(`[SessionServer] Players left in session ${jsonMessage.sessionID}: ${this.sessions[jsonMessage.sessionID].CurrentPlayerCount}`);
 			if (!this.sessions[jsonMessage.sessionID].CurrentPlayerCount)
 			{
-				console.log(`[PageServer] Session ${jsonMessage.sessionID} has no players left; discarding it`);
+				console.log(`[SessionServer] Session ${jsonMessage.sessionID} has no players left; discarding it`);
 				delete this.sessions[jsonMessage.sessionID];
 			}
 
@@ -154,7 +154,7 @@ export class SessionServer<SessionData>
 
 	private removePlayer(playerID : number)
 	{
-		console.log(`[PageServer] Connection from player ${playerID} closed...`);
+		console.log(`[SessionServer] Connection from player ${playerID} closed...`);
 		for (const sessionID in this.sessions)
 		{
 			this.commands.leaveSession.apply(this, [playerID, {"sessionID": parseInt(sessionID)}]);
@@ -203,7 +203,7 @@ export class SessionServer<SessionData>
 
 		this.wsServer.on('request', this.handleNewPlayer);
 
-		console.log(`[PageServer] Running at port ${this.port}`);
+		console.log(`[SessionServer] Running at port ${this.port}`);
 	}
 
 	generatePlayerID()
@@ -226,7 +226,7 @@ export class SessionServer<SessionData>
 			}
 			else
 			{
-				console.error(`[PageServer] no command called "${jsonMessage.command}" available`)
+				console.error(`[SessionServer] no command called "${jsonMessage.command}" available`)
 			}
 		}
 	}
@@ -235,7 +235,7 @@ export class SessionServer<SessionData>
 	{
 		if (!this.player[playerID])
 		{
-			console.error(`[PageServer] No player with ID ${playerID} is connected!`);
+			console.error(`[SessionServer] No player with ID ${playerID} is connected!`);
 			return false;
 		}
 
