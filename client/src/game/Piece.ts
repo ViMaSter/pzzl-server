@@ -70,13 +70,33 @@ export class IntersectionDescription
 
 	static CreateDefault()
 	{
-		return this.CreateNew(true, Shape.NONE, 0, new Vector2(1, 1), new Vector2(0, 1));
+		return this.CreateNew(true, Shape.NONE, 0, new Vector2(1, 1), new Vector2(0, 0));
 	}
 
 	static CreateNew(isOutwards : boolean, shape : Shape, outwardishSideCurvature : number, size : Vector2|null, offset : Vector2|null)
 	{
 		const finalSize : Vector2 = size == null ? new Vector2(1, 1) : size;
-		const finalOffset : Vector2 = offset == null ? new Vector2(1, 1) : offset;
+		const finalOffset : Vector2 = offset == null ? new Vector2(0, 0) : offset;
+
+		let totalPos = Vector2.add(finalSize, finalOffset);
+		let totalNeg = Vector2.subtract(Vector2.multiply(finalSize, -1), finalOffset);
+		if (totalPos.x > 1)
+		{
+			throw new RangeError("Size X + Offset X has to be smaller or exactly 1");
+		}
+		if (totalPos.y > 1)
+		{
+			throw new RangeError("Size Y + Offset Y has to be smaller or exactly 1");
+		}
+		if (totalNeg.x < -1)
+		{
+			throw new RangeError("Size X - Offset X has to be bigger or exactly -1");
+		}
+		if (totalNeg.y < -1)
+		{
+			throw new RangeError("Size Y - Offset Y has to be bigger or exactly -1");
+		}
+
 		return new IntersectionDescription(isOutwards, shape, outwardishSideCurvature, finalSize, finalOffset);
 	}
 
@@ -150,87 +170,81 @@ export class Piece
 	private IntoImageSpace(coordsToConvert : Vector2, imageElement : HTMLImageElement, puzzlePieceDimensions : Vector2) : Vector2
 	{
 		return new Vector2(
-			coordsToConvert.x / ((this.Size.x * puzzlePieceDimensions.x) - (this.IntersectionPadding.x/2)) * imageElement.naturalWidth,
-			coordsToConvert.y / ((this.Size.y * puzzlePieceDimensions.y) - (this.IntersectionPadding.y/2)) * imageElement.naturalHeight
+			coordsToConvert.x / ((this.Size.x * puzzlePieceDimensions.x) - (Vector2.multiply(this.IntersectionPadding, 2).x/2)) * imageElement.naturalWidth,
+			coordsToConvert.y / ((this.Size.y * puzzlePieceDimensions.y) - (Vector2.multiply(this.IntersectionPadding, 2).y/2)) * imageElement.naturalHeight
 		)
 	}
 	
-	private AddPoint(position : Vector2)
+	private AddPoint(position : Vector2, direction : NeighborDirection)
 	{
-		this.twoDContext.lineTo(position.x, position.y);
+		if (direction.Name == "Up")
+		{
+			this.twoDContext.lineTo(position.x, position.y);
+		}
+		if (direction.Name == "Down")
+		{
+			this.twoDContext.lineTo(position.x, this.Size.y + position.y);
+		}
 	}
 	
-	RelativeToIntersectionPadding(relativePoint : Vector2, direction : NeighborDirection) : Vector2
+	RelativeToIntersectionPadding(relativePoint : Vector2) : Vector2
 	{
 		relativePoint.x += 0.5;
-		if (direction.Name == "Up")
-		{
-			return Vector2.add(
-				Vector2.multiply(
-					relativePoint,
-					new Vector2(this.SizeWithPadding.x, -this.IntersectionPadding.y)
-				),
-				new Vector2(0, this.IntersectionPadding.y)
-			);
-		}
-		console.error("Not yet supported");
-		return new Vector2(0, 0);
-	}
-	
-	FinishRemainingLines(from : Vector2, direction : NeighborDirection)
-	{
-		if (direction.Name == "Up")
-		{
-			const points = [
-				this.RelativeToIntersectionPadding( new Vector2(0.5, 0), direction ),
-				this.RelativeToIntersectionPadding( new Vector2(0.5, 1), direction ),
-				this.RelativeToIntersectionPadding( new Vector2(-0.5, 1), direction ),
-				this.RelativeToIntersectionPadding( new Vector2(-0.5, 0), direction )
-			];
-
-			for (let i : number = 0; i < points.length; i++)
-			{
-				this.AddPoint(points[i]);
-			}
-		}
+		return Vector2.add(
+			Vector2.multiply(
+				relativePoint,
+				new Vector2(this.SizeWithPadding.x, -Vector2.multiply(this.IntersectionPadding, 2).y)
+			),
+			new Vector2(0, Vector2.multiply(this.IntersectionPadding, 2).y)
+		);
 	}
 	
 	ClipDirection(direction : NeighborDirection)
 	{
 		const description = this.getIntersection(direction);
-		if (direction.Name == "Up")
+
+		this.twoDContext.beginPath(); 
+		let start = Vector2.multiply(new Vector2(0, 0), this.SizeWithPadding);
+		start = Vector2.add(start, new Vector2(0, Vector2.multiply(this.IntersectionPadding, 2).y));
+
+		let end = Vector2.multiply(new Vector2(1, 0), this.SizeWithPadding);
+		end = Vector2.add(end, new Vector2(0, Vector2.multiply(this.IntersectionPadding, 2).y));
+
+		if (description.Shape == Shape.Triangle)
 		{
-			this.twoDContext.beginPath(); 
-			let start = Vector2.multiply(new Vector2(0, 0), this.SizeWithPadding);
-			start = Vector2.add(start, new Vector2(0, this.IntersectionPadding.y));
-
-			let end = Vector2.multiply(new Vector2(1, 0), this.SizeWithPadding);
-			end = Vector2.add(end, new Vector2(0, this.IntersectionPadding.y));
-
-			if (description.Shape == Shape.Triangle)
+			let shapePoints = [];
+			shapePoints.push(this.RelativeToIntersectionPadding( new Vector2(-description.Size.x / 2 + description.Offset.x/2, 0) ));
+			shapePoints.push(this.RelativeToIntersectionPadding( new Vector2(description.Offset.x/2, description.Size.y)      ));
+			shapePoints.push(this.RelativeToIntersectionPadding( new Vector2(description.Size.x / 2 + description.Offset.x/2, 0)  ));
+			this.AddPoint(start, direction);
+			this.AddPoint(shapePoints[0], direction);
+			for (let i : number = 0; i < shapePoints.length; i++)
 			{
-				let shapePoints = [];
-				shapePoints.push(this.RelativeToIntersectionPadding( new Vector2(-description.Size.x / 2, 0), direction ));
-				shapePoints.push(this.RelativeToIntersectionPadding( new Vector2(0, description.Size.y)     , direction ));
-				shapePoints.push(this.RelativeToIntersectionPadding( new Vector2(description.Size.x / 2, 0) , direction ));
-				this.AddPoint(start);
-				this.AddPoint(shapePoints[0]);
-				for (let i : number = 0; i < shapePoints.length; i++)
-				{
-					this.AddPoint(shapePoints[i]);
-				}
-				this.AddPoint(end);
+				this.AddPoint(shapePoints[i], direction);
+			}
+			this.AddPoint(end, direction);
 
-				this.FinishRemainingLines(end, direction);
-
-				this.twoDContext.globalCompositeOperation = "destination-out";
-				this.twoDContext.fillStyle = 'black';
-				this.twoDContext.fill();
+			this.AddPoint( this.RelativeToIntersectionPadding( new Vector2(0.5, 0) ), direction );
+			if (!description.IsOutwards)
+			{
+				this.AddPoint( this.RelativeToIntersectionPadding( new Vector2(0.5, 1) ), direction );
+				this.AddPoint( this.RelativeToIntersectionPadding( new Vector2(-0.5, 1) ), direction );
 			}
 			else
 			{
-				console.error("Shape not yet supported");
+				this.AddPoint( this.RelativeToIntersectionPadding( new Vector2(0.5, 10000) ), direction );
+				this.AddPoint( this.RelativeToIntersectionPadding( new Vector2(-0.5, 10000) ), direction );
 			}
+			this.AddPoint( this.RelativeToIntersectionPadding( new Vector2(-0.5, 0) ), direction );
+
+
+			this.twoDContext.globalCompositeOperation = description.IsOutwards ? 'destination-in' : 'destination-out';
+			this.twoDContext.fillStyle = 'black';
+			this.twoDContext.fill();
+		}
+		else
+		{
+			console.error("Shape not yet supported");
 		}
 	}
 	
@@ -448,7 +462,7 @@ export class PieceGrid
 					if (!this.hasItem(Vector2.add(index, direction.Position)))
 					{
 						// ...create our own
-						((this.data[x][y] as any) as InternalPiece).setIntersection(direction, IntersectionDescription.CreateNew(true, Shape.Sphere, 0.4, new Vector2(1.5, 0.5), new Vector2(0.5, 0.5)));
+						((this.data[x][y] as any) as InternalPiece).setIntersection(direction, IntersectionDescription.CreateDefault());
 						return;
 					}
 					// ...otherwise create counter for the intersection of the preceding piece

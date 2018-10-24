@@ -163,9 +163,13 @@ export class Puzzle
 				const item = this.pieces.item(position);
 				const context : CanvasRenderingContext2D = <CanvasRenderingContext2D>item.Element.getContext("2d");
 
+				if (x == 1 && y == 2)
+				{
+					(item as any).intersections.set("Up", PuzzlePiece.IntersectionDescription.CreateNew(false, PuzzlePiece.Shape.Triangle, 0, new Vector2(0.5, 1), new Vector2(0.25, 0)));
+				}
 				if (x == 1 && y == 1)
 				{
-					(item as any).intersections.set("Up", PuzzlePiece.IntersectionDescription.CreateNew(true, PuzzlePiece.Shape.Triangle, 0, new Vector2(0.5, 1), new Vector2(0, 0)));
+					(item as any).intersections.set("Down", PuzzlePiece.IntersectionDescription.CreateNew(true, PuzzlePiece.Shape.Triangle, 0, new Vector2(0.5, 1), new Vector2(0.25, 0)));
 				}
 				item.Render(this.imageElement, this.pieces.Dimensions);
 				item.Clip();
