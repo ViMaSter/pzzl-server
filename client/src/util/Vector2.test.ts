@@ -12,15 +12,9 @@ describe('Vector2', () => {
 		expect(()=>{new Vector2(NaN, 2)}).toThrowWithMessage(RangeError, "X cannot be NaN");
 		expect(()=>{new Vector2(1, NaN)}).toThrowWithMessage(RangeError, "Y cannot be NaN");
 		let n : number;
+		expect(()=>{new Vector2(n, n)}).toThrowWithMessage(RangeError, "X cannot be undefined");
 		expect(()=>{new Vector2(n, 2)}).toThrowWithMessage(RangeError, "X cannot be undefined");
 		expect(()=>{new Vector2(1, n)}).toThrowWithMessage(RangeError, "Y cannot be undefined");
-
-		/* add this
-		expect(new Vector2()	).
-		expect(new Vector2(0.5)	).
-		expect(new Vector2(0)	).
-		expect(new Vector2(1)	).
-		*/
 	});
 
 	test('fromString', () => {
@@ -31,12 +25,6 @@ describe('Vector2', () => {
 		expect(Vector2.fromString("0,5", "0,6" )	).toMatchObject(		new Vector2(0, 0));
 		expect(Vector2.fromString("1px2", "1px2" )	).toMatchObject(		new Vector2(1, 1));
 		expect(Vector2.fromString("2", "2" )		).not.toMatchObject(	new Vector2(1, 1));
-		/* add this
-		expect(Vector2.fromString()	).
-		expect(Vector2.fromString(0.5)	).
-		expect(Vector2.fromString(0)	).
-		expect(Vector2.fromString(1)	).
-		*/
 	});
 
 	test('toString', () => {
@@ -55,12 +43,6 @@ describe('Vector2', () => {
 
 		expect(Vector2.add(new Vector2(0, 0), new Vector2(-1, -1))	).toMatchObject(		Vector2.add(new Vector2(-1, -1), new Vector2(0, 0)) );
 		expect(Vector2.add(new Vector2(0, 0), new Vector2(-1, -1))	).not.toMatchObject(	Vector2.add(new Vector2(-1, -1), new Vector2(-1, -1)) );
-
-		/* add this
-		expect(Vector2.add(new Vector2(0, 0), 0.5)	).
-		expect(Vector2.add(new Vector2(0, 0), 0)	).
-		expect(Vector2.add(new Vector2(0, 0), 1)	).
-		*/
 	});
 
 	test('subtract', () => {
@@ -69,12 +51,6 @@ describe('Vector2', () => {
 		expect(Vector2.subtract(new Vector2(0, 0), new Vector2(-1, -1))	).toMatchObject(		new Vector2(1, 1) );
 
 		expect(Vector2.subtract(new Vector2(1, 1), new Vector2(0, 0))	).not.toMatchObject(	Vector2.subtract(new Vector2(0, 0), new Vector2(1, 1)) );
-
-		/* add this
-		expect(Vector2.subtract(new Vector2(0, 0), 0.5)	).
-		expect(Vector2.subtract(new Vector2(0, 0), 0)	).
-		expect(Vector2.subtract(new Vector2(0, 0), 1)	).
-		*/
 	});
 
 	test('multiply with Vector2', () => {
