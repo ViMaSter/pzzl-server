@@ -10,47 +10,65 @@ if (Array.prototype.remove) {
 	}
 }
 
+import {ISessionData as ISessionData, ISessionDataConstructor as ISessionDataConstructor} from 'SessionServer/SessionDataInterface';
+
 type ForEachPlayerCallback = (playerID : number) => void;
-class Session<SessionData> {
+class Session {
 	private id : number;
-	private currentSessionData : SessionData;
+	private currentSessionData : ISessionData;
 	private connectedPlayerIDs : number[] = [];
 	get CurrentPlayerCount() { return this.connectedPlayerIDs.length; };
 
-	constructor(ID : number, sessionData : SessionData)
+	constructor(sessionType : ISessionDataConstructor, ID : number, sessionCreationArguments : any)
 	{
 		this.id = ID;
-		this.currentSessionData = sessionData;
+		this.currentSessionData = new sessionType(sessionCreationArguments);
 	}
 
-	addPlayerByID(playerID : number) : boolean
+	HasPlayerInSession(playerID : number) : boolean
 	{
-		this.connectedPlayerIDs.push(playerID);
-		if (this.connectedPlayerIDs.indexOf(playerID) > -1)
+		return this.connectedPlayerIDs.indexOf(playerID) > -1;
+	}
+
+	AddPlayerByID(playerID : number) : boolean
+	{
+		if (this.HasPlayerInSession(playerID))
 		{
 			console.error(`[SessionServer] Player ${playerID} is already part of session ${this.id} (current players: ${this.connectedPlayerIDs.join(', ')})`);
 			return false;
 		}
+		this.connectedPlayerIDs.push(playerID);
 		return true;
 	}
 
-	removePlayerByID(playerID : number) : boolean
+	RemovePlayerByID(playerID : number) : boolean
 	{
-		if (this.connectedPlayerIDs.indexOf(playerID) <= -1)
+		if (!this.HasPlayerInSession(playerID))
 		{
 			console.error(`[SessionServer] Player ${playerID} is not part of session ${this.id} (current players: ${this.connectedPlayerIDs.join(', ')})`);
 			return false;
 		}
-		this.connectedPlayerIDs.remove(playerID);
+		this.connectedPlayerIDs.slice(this.connectedPlayerIDs.indexOf(playerID), 1);
 		return true;
 	}
 
-	serializeData() : string
+	Update(playerID : number, sessionUpdateArguments : any) : boolean
 	{
-		return JSON.stringify(this.currentSessionData);
+		if (!this.HasPlayerInSession(playerID))
+		{
+			console.error(`[SessionServer] Player ${playerID} is not part of session ${this.id} and therefore can't update the session (current players: ${this.connectedPlayerIDs.join(', ')})`);
+			return false;
+		}
+		this.currentSessionData.Update(sessionUpdateArguments);
+		return true;
 	}
 
-	forEachPlayer(callback : ForEachPlayerCallback)
+	GetData() : any
+	{
+		return this.currentSessionData as any;
+	}
+
+	ForEachPlayer(callback : ForEachPlayerCallback)
 	{
 		this.connectedPlayerIDs.forEach(callback);
 	}
@@ -60,30 +78,58 @@ import * as http from 'http';
 import * as ws from 'websocket';
 
 type commandSignature = (playerID : number, jsonMessage : any) => any;
-export class SessionServer<SessionData>
+export class SessionServer
 {
 	private commands : {[name : string]: commandSignature} = {};
 
 	private nextSessionID : number = 0;
-	private sessions : {[ID : number]: Session<SessionData>} = {};
+	private sessions : {[ID : number]: Session} = {};
 
 	private nextPlayerID : number = 0;
 	private player : {[ID : number]: ws.connection} = {};
 
+	private sessionType : ISessionDataConstructor;
 	private port : number;
 
 	private httpServer : http.Server;
 	private wsServer : ws.server;
 
-	private SetupCommands()
+	private validateSessionID(playerID : number, sessionID : any, request : string)
+	{
+		if (typeof sessionID != "number")
+		{
+			console.error(`[SessionServer] ${request} requires a 'sessionID'-parameter as number! (supplied: ${sessionID} [${typeof sessionID}])`);
+			this.sendMessageToPlayer(playerID, JSON.stringify({
+				"command": request,
+				"sessionID": -1
+			}));
+			return false;
+		}
+		if (!this.sessions[sessionID])
+		{
+			this.sendMessageToPlayer(playerID, JSON.stringify({
+				"command": request,
+				"sessionID": -2
+			}));
+			return false;
+		}
+		return true;
+	}
+
+	private setupCommands()
 	{
 		this.commands["createSession"] = (playerID : number, jsonMessage : any) =>
 		{
 			const newSessionID = this.generateSessionID();
-			this.sessions[newSessionID] = new Session(newSessionID, jsonMessage.mapName);
-			if (this.sessions[newSessionID].addPlayerByID(playerID))
+			this.sessions[newSessionID] = new Session(this.sessionType, newSessionID, jsonMessage.parameters);
+			if (!this.sessions[newSessionID].AddPlayerByID(playerID))
 			{
 				console.error(`[SessionServer] Unable to add player ${playerID} to newly created session ${newSessionID}`);
+				this.sendMessageToPlayer(playerID, JSON.stringify({
+					"command": "sessionJoin",
+					"sessionID": -1,
+					"session": {}
+				}));
 				return;
 			}
 
@@ -92,17 +138,40 @@ export class SessionServer<SessionData>
 			this.sendMessageToPlayer(playerID, JSON.stringify({
 				"command": "sessionJoin",
 				"sessionID": newSessionID,
-				"session": this.sessions[newSessionID].serializeData()
+				"session": this.sessions[newSessionID].GetData()
 			}));
+		};
+
+		this.commands["updateSession"] = (playerID : number, jsonMessage : any) =>
+		{
+			console.log(`[SessionServer] Player ${playerID} attempting to update session ${jsonMessage.sessionID}`);
+			if (!this.validateSessionID(playerID, jsonMessage.sessionID, "sessionUpdate"))
+			{
+				return;
+			}
+
+			if (!this.sessions[jsonMessage.sessionID].Update(playerID, jsonMessage.parameters))
+			{
+				this.sendMessageToPlayer(playerID, JSON.stringify({
+					"command": "sessionUpdate",
+					"sessionID": -3
+				}));
+			}
+
+			console.log("FFFFFFFFFFFFFFFFFF");
+			console.log((this.sessions[jsonMessage.sessionID] as any).connectedPlayerIDs);
+			this.sessions[jsonMessage.sessionID].ForEachPlayer(((playerID : number) =>
+			{
+				console.log("Update for "+playerID);
+				this.sendMessageToPlayer(playerID, JSON.stringify({"command": "sessionUpdate", "sessionID": jsonMessage.sessionID, "session": this.sessions[jsonMessage.sessionID].GetData()}));
+			}).bind(this));
 		};
 
 		this.commands["joinSession"] = (playerID : number, jsonMessage : any) =>
 		{
-			console.log(`[SessionServer] Player ${playerID} attempting to join session ${jsonMessage.sessionID}`);
-			if (jsonMessage.sessionID < -1)
+			if (jsonMessage.sessionID != -1 && !this.validateSessionID(playerID, jsonMessage.sessionID, "sessionJoin"))
 			{
-				console.log("[SessionServer] Invalid session id");
-				return {"sessionID": -1};
+				return;
 			}
 
 			// requesting a join to session ID -1 will join the latest session
@@ -111,29 +180,43 @@ export class SessionServer<SessionData>
 				jsonMessage.sessionID = this.nextSessionID - 1;
 			}
 
-			if (!this.sessions[jsonMessage.sessionID])
+			if (!this.validateSessionID(playerID, jsonMessage.sessionID, "sessionJoin"))
 			{
-				console.log(`[SessionServer] Session ${jsonMessage.sessionID} (no longer) doesn't exist`);
-				return {"sessionID": -1};
+				return;
 			}
 
-			this.sessions[jsonMessage.sessionID].addPlayerByID(playerID);
+			if (!this.sessions[jsonMessage.sessionID].AddPlayerByID(playerID))
+			{
+				this.sendMessageToPlayer(playerID, JSON.stringify({
+					"command": "sessionJoin",
+					"sessionID": -3
+				}));
+				return;
+			}
 
 			this.sendMessageToPlayer(playerID, JSON.stringify({
 				"command": "sessionJoin",
 				"sessionID": jsonMessage.sessionID,
-				"session": this.sessions[jsonMessage.sessionID].serializeData()
+				"session": this.sessions[jsonMessage.sessionID].GetData()
 			}));
 		};
 
 		this.commands["leaveSession"] = (playerID : number, jsonMessage : any) =>
 		{
-			if (typeof jsonMessage.sessionID != "number")
+			if (!this.validateSessionID(playerID, jsonMessage.sessionID, "sessionLeave"))
 			{
-				console.error(`[SessionServer] leaveSession requires a 'sessionID'-parameter as number! (supplied: ${jsonMessage.sessionID} [${typeof jsonMessage.sessionID}])`);
 				return;
 			}
-			this.sessions[jsonMessage.sessionID].removePlayerByID(playerID);
+
+			if (!this.sessions[jsonMessage.sessionID].RemovePlayerByID(playerID))
+			{
+				this.sendMessageToPlayer(playerID, JSON.stringify({
+					"command": "sessionLeave",
+					"sessionID": -3
+				}));
+				return;
+			}
+
 			console.log(`[SessionServer] Players left in session ${jsonMessage.sessionID}: ${this.sessions[jsonMessage.sessionID].CurrentPlayerCount}`);
 			if (!this.sessions[jsonMessage.sessionID].CurrentPlayerCount)
 			{
@@ -141,7 +224,10 @@ export class SessionServer<SessionData>
 				delete this.sessions[jsonMessage.sessionID];
 			}
 
-			this.sendMessageToPlayer(playerID, "{}");
+			this.sendMessageToPlayer(playerID, JSON.stringify({
+				"command": "sessionLeave",
+				"sessionID": jsonMessage.sessionID
+			}));
 		};
 	}
 
@@ -192,8 +278,9 @@ export class SessionServer<SessionData>
 		);
 	}
 
-	constructor(port : number)
+	constructor(sessionType : ISessionDataConstructor, port : number)
 	{
+		this.sessionType = sessionType;
 		this.port = port;
 
 		this.httpServer = http.createServer(() => {});
@@ -201,22 +288,24 @@ export class SessionServer<SessionData>
 
 		this.wsServer = new ws.server({ httpServer: this.httpServer });
 
-		this.wsServer.on('request', this.handleNewPlayer);
+		this.setupCommands();
 
-		console.log(`[SessionServer] Running at port ${this.port}`);
+		this.wsServer.on('request', this.handleNewPlayer.bind(this));
+
+		console.log(`[SessionServer] Listening on port ${this.port}...`);
 	}
 
-	generatePlayerID()
+	private generatePlayerID()
 	{
 		return this.nextPlayerID++;
 	}
 
-	generateSessionID()
+	private generateSessionID()
 	{
 		return this.nextSessionID++;
 	}
 
-	handleMessage(playerID : number, jsonMessage : any)
+	private handleMessage(playerID : number, jsonMessage : any)
 	{
 		if (jsonMessage.command)
 		{
@@ -231,7 +320,7 @@ export class SessionServer<SessionData>
 		}
 	}
 
-	sendMessageToPlayer(playerID : number, message : string)
+	private sendMessageToPlayer(playerID : number, message : string)
 	{
 		if (!this.player[playerID])
 		{
@@ -241,13 +330,5 @@ export class SessionServer<SessionData>
 
 		this.player[playerID].send(message);
 		return true;
-	}
-
-	updateReplica(session : Session<SessionData>)
-	{
-		session.forEachPlayer(((playerID : number) =>
-		{
-			this.sendMessageToPlayer(playerID, JSON.stringify({"command": "sessionUpdate", "session": session.serializeData()}));
-		}).bind(this));
 	}
 };

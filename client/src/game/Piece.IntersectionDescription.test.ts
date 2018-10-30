@@ -63,8 +63,8 @@ describe('IntersectionDescription', () => {
 	});
 
 	test('CreateCounter', () => {
-		const intersectionDescriptionOriginal = IntersectionDescription.CreateNew(true, Shape.Sphere, 1, new Vector2(1, 1), new Vector2(1, 1));
-		const intersectionDescriptionExpectedCounter = IntersectionDescription.CreateNew(false, Shape.Sphere, -1, new Vector2(1, 1), new Vector2(-1, -1));
+		const intersectionDescriptionOriginal = IntersectionDescription.CreateNew(true, Shape.Triangle, 1, new Vector2(0.5, 0.5), new Vector2(0.5, 0.5));
+		const intersectionDescriptionExpectedCounter = IntersectionDescription.CreateNew(false, Shape.Triangle, -1, new Vector2(0.5, 0.5), new Vector2(-0.5, -0.5));
 
 		expect(IntersectionDescription.CreateCounter(intersectionDescriptionOriginal)).toMatchObject(intersectionDescriptionExpectedCounter);
 		expect(IntersectionDescription.CreateCounter(intersectionDescriptionOriginal)).not.toMatchObject(intersectionDescriptionOriginal);

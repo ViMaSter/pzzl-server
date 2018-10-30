@@ -79,7 +79,7 @@ export class IntersectionDescription
 		const finalOffset : Vector2 = offset == null ? new Vector2(0, 0) : offset;
 
 		let totalPos = Vector2.add(finalSize, finalOffset);
-		let totalNeg = Vector2.subtract(Vector2.multiply(finalSize, -1), finalOffset);
+		let totalNeg = Vector2.add(Vector2.multiply(finalSize, -1), finalOffset);
 		if (totalPos.x > 1)
 		{
 			throw new RangeError("Size X + Offset X has to be smaller or exactly 1");
@@ -241,6 +241,10 @@ export class Piece
 			this.twoDContext.globalCompositeOperation = description.IsOutwards ? 'destination-in' : 'destination-out';
 			this.twoDContext.fillStyle = 'black';
 			this.twoDContext.fill();
+		}
+		else if (description.Shape == Shape.NONE)
+		{
+			// intentionally void
 		}
 		else
 		{

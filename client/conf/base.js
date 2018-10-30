@@ -20,7 +20,8 @@ module.exports = {
 		extensions: [ '.tsx', '.ts', '.js' ],
         alias: {
             util: srcPath('util'),
-            game: srcPath('game')
+            game: srcPath('game'),
+            server: srcPath('server')
         }
 	},
 	output: {

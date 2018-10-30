@@ -18,5 +18,6 @@ module.exports = {
     '^Game/(.*)$': '<rootDir>/src/Game/$1',
     '^PageServer/(.*)$': '<rootDir>/src/PageServer/$1',
     '^SessionServer/(.*)$': '<rootDir>/src/SessionServer/$1'
-  }
+  },
+  "setupTestFrameworkScriptFile": "jest-extended"
 }

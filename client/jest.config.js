@@ -16,7 +16,8 @@ module.exports = {
   ],
   "moduleNameMapper": {
     '^util/(.*)$': '<rootDir>/src/util/$1',
-    '^game/(.*)$': '<rootDir>/src/game/$1'
+    '^game/(.*)$': '<rootDir>/src/game/$1',
+    '^server/(.*)$': '<rootDir>/src/server/$1'
   },
   "setupFiles": ["jest-canvas-mock"],
   "setupTestFrameworkScriptFile": "jest-extended"
