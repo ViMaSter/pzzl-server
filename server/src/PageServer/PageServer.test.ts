@@ -41,10 +41,10 @@ describe('PageServer', async () => {
 		});
 	});
 
-	afterAll(() => {
-		return pageServer.shutdown().then(() =>
+	afterAll(async () => {
+		await pageServer.Shutdown().then(() =>
 		{
-			console.log("Successfully shut down test-server!");
+			console.log("Successfully shut down test-server");
 		},
 		(error : Error) =>
 		{
@@ -95,9 +95,14 @@ describe('PageServer', async () => {
 	});
 
 	test("Construct server with already allocated port", () => {
+		const supressConsole = jest.fn();
+		global.console.log = supressConsole;
+		global.console.warn = supressConsole;
+		global.console.error = supressConsole;
+
 		async function constructServer()
 		{
-			return PageServer.Create(port, subfolder).then(
+			return await PageServer.Create(port, subfolder).then(
 				(filenames : PageServer) =>
 				{
 				},
@@ -108,7 +113,8 @@ describe('PageServer', async () => {
 				}
 			);
 		}
-		return expect(constructServer()).rejects.toThrow(`listen EADDRINUSE :::${port}`);
+		expect(constructServer()).rejects.toThrow(`listen EADDRINUSE :::${port}`);
+		supressConsole.mockReset();
 	});
 
 	test("Construct server with non-existing port", () => {

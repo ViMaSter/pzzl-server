@@ -20,8 +20,6 @@ export class PageServer
 			}
 
 			server.httpServer = httpShutdown(http.createServer((request : http.IncomingMessage, response : http.ServerResponse) => {
-
-
 				const { headers, method, url } = request;
 				let body : Uint8Array[] = [];
 
@@ -102,7 +100,7 @@ export class PageServer
 		});
 	}
 
-	shutdown() : Promise<void>
+	Shutdown() : Promise<void>
 	{
 		return new Promise((resolve, reject) => {
 			this.httpServer.shutdown(()=>{

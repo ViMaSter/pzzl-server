@@ -48,7 +48,7 @@ class Session {
 			console.error(`[SessionServer] Player ${playerID} is not part of session ${this.id} (current players: ${this.connectedPlayerIDs.join(', ')})`);
 			return false;
 		}
-		this.connectedPlayerIDs.slice(this.connectedPlayerIDs.indexOf(playerID), 1);
+		this.connectedPlayerIDs.splice(this.connectedPlayerIDs.indexOf(playerID), 1);
 		return true;
 	}
 
@@ -77,6 +77,9 @@ class Session {
 import * as http from 'http';
 import * as ws from 'websocket';
 
+//@ts-ignore
+import httpShutdown from 'http-shutdown';
+
 type commandSignature = (playerID : number, jsonMessage : any) => any;
 export class SessionServer
 {
@@ -89,9 +92,9 @@ export class SessionServer
 	private player : {[ID : number]: ws.connection} = {};
 
 	private sessionType : ISessionDataConstructor;
-	private port : number;
+	private port : number = -1;
 
-	private httpServer : http.Server;
+	private httpServer : any;
 	private wsServer : ws.server;
 
 	private validateSessionID(playerID : number, sessionID : any, request : string)
@@ -107,6 +110,7 @@ export class SessionServer
 		}
 		if (!this.sessions[sessionID])
 		{
+			console.error(`[SessionServer] Attemping to run {request} on session '${sessionID}' will fail, as the session doesn't exist`);
 			this.sendMessageToPlayer(playerID, JSON.stringify({
 				"command": request,
 				"sessionID": -2
@@ -158,11 +162,8 @@ export class SessionServer
 				}));
 			}
 
-			console.log("FFFFFFFFFFFFFFFFFF");
-			console.log((this.sessions[jsonMessage.sessionID] as any).connectedPlayerIDs);
 			this.sessions[jsonMessage.sessionID].ForEachPlayer(((playerID : number) =>
 			{
-				console.log("Update for "+playerID);
 				this.sendMessageToPlayer(playerID, JSON.stringify({"command": "sessionUpdate", "sessionID": jsonMessage.sessionID, "session": this.sessions[jsonMessage.sessionID].GetData()}));
 			}).bind(this));
 		};
@@ -231,6 +232,27 @@ export class SessionServer
 		};
 	}
 
+	private generatePlayerMessageHandler(playerID : number)
+	{
+		return (message : ws.IMessage) => {
+			if (message.type === 'utf8')
+			{
+				try
+				{
+					const jsonMessage = JSON.parse(message.utf8Data as string);
+					this.handleMessage(playerID, jsonMessage);
+				}
+				catch(e)
+				{
+					console.group("Invalid JSON string received!");
+					console.error(message);
+					console.error(e);
+					console.groupEnd();
+				}
+			}
+		};
+	}
+
 	private generatePlayerCloseHandler(playerID : number)
 	{
 		return (reasonCode : number, description : string) => {
@@ -255,44 +277,60 @@ export class SessionServer
 		const playerID : number = this.generatePlayerID();
 		this.player[playerID] = connection;
 
-		this.player[playerID].on('message', (message) => {
-			if (message.type === 'utf8')
-			{
-				try
-				{
-					const jsonMessage = JSON.parse(message.utf8Data as string);
-					this.handleMessage(playerID, jsonMessage);
-				}
-				catch(e)
-				{
-					console.group("Invalid JSON string received!");
-					console.error(message);
-					console.error(e);
-					console.groupEnd();
-				}
-			}
-		});
+		this.player[playerID].on('message', this.generatePlayerMessageHandler(playerID));
 
-		this.player[playerID].on('close',
-			this.generatePlayerCloseHandler(playerID)
-		);
+		this.player[playerID].on('close', this.generatePlayerCloseHandler(playerID));
 	}
 
-	constructor(sessionType : ISessionDataConstructor, port : number)
+	private constructor(sessionType : ISessionDataConstructor, port : number)
 	{
-		this.sessionType = sessionType;
 		this.port = port;
 
-		this.httpServer = http.createServer(() => {});
-		this.httpServer.listen(this.port, () => {});
+		this.sessionType = sessionType;
+
+		this.httpServer = httpShutdown(http.createServer(() => {}));
 
 		this.wsServer = new ws.server({ httpServer: this.httpServer });
+	}
 
-		this.setupCommands();
+	static Create(sessionType : ISessionDataConstructor, port : number) : Promise<SessionServer>
+	{
+		return new Promise<SessionServer>((resolve, reject)=>
+		{
+			const newServer : SessionServer = new SessionServer(sessionType, port);
 
-		this.wsServer.on('request', this.handleNewPlayer.bind(this));
+			newServer.setupCommands();
 
-		console.log(`[SessionServer] Listening on port ${this.port}...`);
+			newServer.wsServer.on('request', newServer.handleNewPlayer.bind(newServer));
+
+			newServer.httpServer.on('listening', () =>
+			{
+				console.log(`[SessionServer] Listening on port ${newServer.port}...`);
+				resolve(newServer);
+			});
+
+			newServer.wsServer.on('error', () =>
+			{
+				console.group(`[SessionServer] Error initializing server!`);
+				reject();
+			});
+
+			newServer.httpServer.listen(newServer.port);
+		})
+	}
+
+	Shutdown() : Promise<void>
+	{
+		return new Promise((resolve, reject) => {
+			this.httpServer.shutdown(()=>{
+				resolve();
+			});
+		});
+	}
+
+	Running() : boolean
+	{
+		return this.httpServer.shutdown();
 	}
 
 	private generatePlayerID()
