@@ -221,6 +221,49 @@ describe('Puzzle', () => {
 		expect(piece23.getPosition()).toMatchObject(Vector2.add(piece22.getPosition(), new Vector2(0, piece22.SizeWithPadding.y - piece22.IntersectionPadding.y*2)));
 	});
 
+	test('Connect two pieces and connect a third piece through indirect movement', () => {
+		const puzzle : Puzzle = new Puzzle(document.querySelector("#puzzle") as HTMLElement, document.querySelector("img") as HTMLImageElement, new Vector2(5, 5));
+
+		const piece22 : Piece = (puzzle as any).pieces.item(new Vector2(2, 2));
+		const piece23 : Piece = (puzzle as any).pieces.item(new Vector2(2, 3));
+
+		expect(piece22.hasNeighbor(NeighborDirection.Down)).toBe(false);
+		expect(piece23.hasNeighbor(NeighborDirection.Up)).toBe(false);
+
+		const offsetFromThreshold : number = 5;
+		const offset : number = Puzzle.SnapThresholdInPx - offsetFromThreshold;
+
+		const piece22Move : Vector2 = new Vector2(500, 500);
+		const piece23Move : Vector2 = new Vector2(piece22Move.x, piece22Move.y + piece22.SizeWithPadding.y + (Puzzle.SnapThresholdInPx - offset));
+
+		// connect pieces like in test above
+		movePieceTo(piece22, piece22Move);
+		movePieceTo(piece23, piece23Move);
+
+		// move [2, 2] and expect a connection between [2, 3] and [2, 4] to occur when dropping [2, 2]
+		// prepare [2, 4] position
+		const piece24 : Piece = (puzzle as any).pieces.item(new Vector2(2, 4));
+		const piece24Move : Vector2 = new Vector2(600, 600);
+		movePieceTo(piece24, piece24Move);
+
+		// calculate offset required for connection
+		const offsetByPiece = piece22.SizeWithPadding.y + (Puzzle.SnapThresholdInPx - offset);
+		// move [2, 2]...
+		movePieceTo(piece22, new Vector2(piece24Move.x, piece24Move.y - (piece22.Size.y*2) - offsetFromThreshold));
+
+		// .. and verify connection between [2, 3] and [2, 4]
+		expect(piece23.hasNeighbor(NeighborDirection.Down)).toBe(true);
+		expect(piece24.hasNeighbor(NeighborDirection.Up)).toBe(true);
+		expect(piece23.getNeighbor(NeighborDirection.Down).Index).toMatchObject(piece24.Index);
+		expect(piece24.getNeighbor(NeighborDirection.Up).Index).toMatchObject(piece23.Index);
+
+		expect(piece23.getPosition()).toMatchObject(Vector2.subtract(piece24.getPosition(), new Vector2(0, piece24.SizeWithPadding.y - piece24.IntersectionPadding.y*2)));
+
+		// items are connected and should follow each other
+		movePieceTo(piece22, piece22Move);
+		expect(piece24.getPosition()).toMatchObject(Vector2.add(piece23.getPosition(), new Vector2(0, piece23.SizeWithPadding.y - piece23.IntersectionPadding.y*2)));
+	});
+
 	const x = Math.floor(Math.random() * (10 - 0 + 1)) + 0;
 	const y = Math.floor(Math.random() * (10 - 0 + 1)) + 0;
 	const snapThresholdInPx = Math.floor(Math.random() * ((Puzzle.SnapThresholdInPx-1) - 0 + 1)) + 0;
