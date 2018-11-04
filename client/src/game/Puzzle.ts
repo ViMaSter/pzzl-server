@@ -163,14 +163,15 @@ export class Puzzle
 				const item = this.pieces.item(position);
 				const context : CanvasRenderingContext2D = <CanvasRenderingContext2D>item.Element.getContext("2d");
 
-				if (x == 1 && y == 2)
+				if (y != 0)
 				{
 					(item as any).intersections.set("Up", PuzzlePiece.IntersectionDescription.CreateNew(false, PuzzlePiece.Shape.Triangle, 0, new Vector2(0.5, 1), new Vector2(0.25, 0)));
 				}
-				if (x == 1 && y == 1)
+				if (y+1 != this.pieces.Dimensions.y)
 				{
 					(item as any).intersections.set("Down", PuzzlePiece.IntersectionDescription.CreateNew(true, PuzzlePiece.Shape.Triangle, 0, new Vector2(0.5, 1), new Vector2(0.25, 0)));
 				}
+
 				item.Render(this.imageElement, this.pieces.Dimensions);
 				item.Clip();
 			}
@@ -214,23 +215,7 @@ export class Puzzle
 			return;
 		}
 
-		this.fixScreenBorderPosition(this.activePiece);
-
-		this.checkForOverlap(this.activePiece);
-
-		this.forEachConnectedPiece(this.activePiece, (connection : PuzzlePieceConnection) =>
-		{
-			// ...take the source piece this piece is a neighbor of (and in which direction) and offset this piece accordingly
-			//const relativeOverlap : Vector2 = this.IntoImageSpace(connection.AffectedPiece.IntersectionPadding, connection.AffectedPiece);
-			const relativeOverlap : Vector2 = connection.AffectedPiece.IntersectionPadding;
-			const offset : number = connection.Direction == PuzzlePiece.NeighborDirection.Up || connection.Direction == PuzzlePiece.NeighborDirection.Down ?
-				connection.AffectedPiece.Size.y - (relativeOverlap.y*0): 
-				connection.AffectedPiece.Size.x - (relativeOverlap.x*0);
-			
-
-			connection.AffectedPiece.moveTo(Vector2.add(connection.SourcePiece.getPosition(), Vector2.multiply(connection.Direction.Position, offset)));
-			this.fixScreenBorderPosition(connection.AffectedPiece);
-		});
+		this.adjustAffectedPosition(this.activePiece, {runOutOfBoundsCheck: true, checkForNewNeighbors: true});
 
 		this.activePiece = null;
 	}
@@ -244,7 +229,22 @@ export class Puzzle
 
 		this.activePiece.moveBy(deltaPosition);
 
-		this.forEachConnectedPiece(this.activePiece, (connection : PuzzlePieceConnection) =>
+		this.adjustAffectedPosition(this.activePiece);
+	}
+
+	private adjustAffectedPosition(sourcePiece : PuzzlePiece.Piece, options : any = {})
+	{
+		if (options["runOutOfBoundsCheck"])
+		{
+			this.fixScreenBorderPosition(sourcePiece);
+		}
+
+		if (options["checkForNewNeighbors"])
+		{
+			this.checkForNewNeighbors(sourcePiece);
+		}
+		
+		this.forEachConnectedPiece(sourcePiece, (connection : PuzzlePieceConnection) =>
 		{
 			// ...take the source piece this piece is a neighbor of (and in which direction) and offset this piece accordingly
 			//const relativeOverlap : Vector2 = this.IntoImageSpace(connection.AffectedPiece.IntersectionPadding, connection.AffectedPiece);
@@ -252,9 +252,17 @@ export class Puzzle
 			const offset : number = connection.Direction == PuzzlePiece.NeighborDirection.Up || connection.Direction == PuzzlePiece.NeighborDirection.Down ?
 				connection.AffectedPiece.Size.y - (relativeOverlap.y*0): 
 				connection.AffectedPiece.Size.x - (relativeOverlap.x*0);
-			
 
 			connection.AffectedPiece.moveTo(Vector2.add(connection.SourcePiece.getPosition(), Vector2.multiply(connection.Direction.Position, offset)));
+			if (options["runOutOfBoundsCheck"])
+			{
+				this.fixScreenBorderPosition(connection.AffectedPiece);
+			}
+
+			if (options["checkForNewNeighbors"])
+			{
+				this.checkForNewNeighbors(connection.AffectedPiece);
+			}
 		});
 	}
 
@@ -272,22 +280,30 @@ export class Puzzle
 		if (leftInBounds && rightInBounds && !topInBounds && bottomInBounds)
 		{
 			droppedPiece.setNeighbor(PuzzlePiece.NeighborDirection.Down, collider);
+
+			this.adjustAffectedPosition(droppedPiece, {runOutOfBoundsCheck: true, checkForNewNeighbors: true});
 		}
 		if (leftInBounds && rightInBounds && topInBounds && !bottomInBounds)
 		{
 			droppedPiece.setNeighbor(PuzzlePiece.NeighborDirection.Up, collider);
+
+			this.adjustAffectedPosition(droppedPiece, {runOutOfBoundsCheck: true, checkForNewNeighbors: true});
 		}
 		if (leftInBounds && !rightInBounds && topInBounds && bottomInBounds)
 		{
 			droppedPiece.setNeighbor(PuzzlePiece.NeighborDirection.Left, collider);
+
+			this.adjustAffectedPosition(droppedPiece, {runOutOfBoundsCheck: true, checkForNewNeighbors: true});
 		}
 		if (!leftInBounds && rightInBounds && topInBounds && bottomInBounds)
 		{
 			droppedPiece.setNeighbor(PuzzlePiece.NeighborDirection.Right, collider);
+
+			this.adjustAffectedPosition(droppedPiece, {runOutOfBoundsCheck: true, checkForNewNeighbors: true});
 		}
 	}
 
-	private checkForOverlap(piece : PuzzlePiece.Piece)
+	private checkForNewNeighbors(piece : PuzzlePiece.Piece)
 	{
 		const currentRect : DOMRect = piece.Element.getBoundingClientRect() as DOMRect;
 		let overlaps : PuzzlePiece.Piece[] = [];
@@ -364,19 +380,7 @@ export class Puzzle
 		piece.moveBy(overlap);
 		if (overlap.x != 0 || overlap.y != 0)
 		{
-			this.forEachConnectedPiece(piece, (connection : PuzzlePieceConnection) =>
-			{
-				// ...take the source piece this piece is a neighbor of (and in which direction) and offset this piece accordingly
-				//const relativeOverlap : Vector2 = this.IntoImageSpace(connection.AffectedPiece.IntersectionPadding, connection.AffectedPiece);
-				const relativeOverlap : Vector2 = connection.AffectedPiece.IntersectionPadding;
-				const offset : number = connection.Direction == PuzzlePiece.NeighborDirection.Up || connection.Direction == PuzzlePiece.NeighborDirection.Down ?
-					connection.AffectedPiece.Size.y - (relativeOverlap.y*0): 
-					connection.AffectedPiece.Size.x - (relativeOverlap.x*0);
-				
-
-				connection.AffectedPiece.moveTo(Vector2.add(connection.SourcePiece.getPosition(), Vector2.multiply(connection.Direction.Position, offset)));
-				this.fixScreenBorderPosition(connection.AffectedPiece);
-			});
+			this.adjustAffectedPosition(piece, {runOutOfBoundsCheck: true});
 		}
 	}
 

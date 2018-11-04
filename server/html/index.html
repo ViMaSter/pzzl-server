@@ -5,7 +5,6 @@
 	<title>Puzzle Client</title>
 	<script type="text/javascript" src="js/bundle.js"></script>
 	<style type="text/css">
-
 		#puzzle
 		{
 			position: absolute;
@@ -37,18 +36,24 @@
 			position: absolute;
 			top: 0px;
 			left: 0px;
-			background: grey;
 		}
 		img
 		{
 			display: none;
 		}
 	</style>
+	<style type="text/css">
+		#puzzle.dev .piece
+		{
+			background: grey;
+		}
+	</style>
+
 	<meta name="viewport" content="width=device-width, user-scalable=no">
 </head>
 <body>
-	<img src="https://i.ytimg.com/vi/QZxmnHh3khQ/maxresdefault.jpg">
-	<div id="puzzle">
+	<img src="https://by.vincent.mahn.ke/wp-content/uploads/2018/05/500px_bg.png">
+	<div id="puzzle" class="">
 		<div id="playingfield">
 		</div>
 	</div>

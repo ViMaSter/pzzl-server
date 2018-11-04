@@ -30,10 +30,10 @@ describe('PuzzlePieceConnection', () => {
 
 import {Puzzle} from "game/Puzzle"
 
-const movePieceTo = (piece : Piece, position : Vector2, skipTests : boolean = false) =>
+const movePieceTo = (piece : Piece, targetPosition : Vector2, skipTests : boolean = false) =>
 {
 	const oldPosition : Vector2 = piece.getPosition();
-	const offsetRequired : Vector2 = Vector2.subtract( position, oldPosition );
+	const offsetRequired : Vector2 = Vector2.subtract( targetPosition, oldPosition );
 	document.dispatchEvent(new MouseEvent("mousemove", {clientX: 0, clientY: 0, bubbles: true}));
 	piece.Element.dispatchEvent(new MouseEvent("mousedown", {clientX: 0, clientY: 0, bubbles: true}));
 	document.dispatchEvent(new MouseEvent("mousemove", {clientX: offsetRequired.x, clientY: offsetRequired.y, bubbles: true}));
@@ -41,8 +41,13 @@ const movePieceTo = (piece : Piece, position : Vector2, skipTests : boolean = fa
 	
 	if (!skipTests)
 	{
-		expect(piece.getPosition()).toMatchObject(position);
-		expect(piece.getPosition()).not.toMatchObject(oldPosition);
+		expect(piece.getPosition()).toMatchObject(targetPosition);
+
+		// if the targetPosition and starting position are alike, we cannot guarantee this expect()-call
+		if (Vector2.equal(oldPosition, targetPosition))
+		{
+			expect(piece.getPosition()).not.toMatchObject(oldPosition);
+		}
 	}
 };
 
@@ -236,8 +241,8 @@ describe('Puzzle', () => {
 			const piece22Move : Vector2 = new Vector2(500, 500);
 			const piece23Move : Vector2 = new Vector2(piece22Move.x, piece22Move.y + piece22.SizeWithPadding.y + (Puzzle.SnapThresholdInPx - offset));
 
-			movePieceTo(piece22, new Vector2(piece22Move.x, piece22Move.y));
-			movePieceTo(piece23, new Vector2(piece23Move.x, piece23Move.y));
+			movePieceTo(piece22, piece22Move);
+			movePieceTo(piece23, piece23Move);
 
 			// connection should have happened here
 			expect(piece22.hasNeighbor(NeighborDirection.Down)).toBe(true);

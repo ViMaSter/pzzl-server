@@ -259,7 +259,7 @@ export class Piece
 	
 	Render(imageElement : HTMLImageElement, puzzlePieceDimensions : Vector2)
 	{
-		this.twoDContext.globalAlpha = 0.4;
+		this.twoDContext.globalAlpha = 1.0;
 
 		const intersectionPaddingInImageSpace = this.IntoImageSpace(this.IntersectionPadding, imageElement, puzzlePieceDimensions);
 
@@ -285,6 +285,7 @@ export class Piece
 		);
 
 		this.twoDContext.globalAlpha = 1.0;
+		this.setupDebugText();
 	}
 	
 	protected static Create(index : Vector2, size : Vector2, intersectionPadding : Vector2, onSelect : ToggleItemCallback, onDeselect : ToggleItemCallback) : Piece
@@ -337,8 +338,6 @@ export class Piece
 		newPiece.Element.addEventListener(	"mousedown",	()=>{onSelect(newPiece)}	);
 		window.addEventListener(			"touchend",		()=>{onDeselect(newPiece)}	);
 		window.addEventListener(			"mouseup",		()=>{onDeselect(newPiece)}	);
-
-		newPiece.setupDebugText();
 		return newPiece;
 	}
 
